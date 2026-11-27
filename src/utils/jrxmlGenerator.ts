@@ -2,12 +2,18 @@ import { headingBookmarks, HEADING_NUMBERS_PROPERTY, serializeHeadingNumbers } f
 import { xmlAttr, cdata } from "./jrxml/xmlEscape";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../config/fonts.config";
 // Import type definitions
-import type { DesignElement, BandType, Band, ContentsListElement, FrameElement, ReportGroup } from "../types";
+import type { DesignElement, BandType, Band, ContentsListElement, FrameElement, ImageElement, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
+import {
+  SECTION_LIMITS_PROPERTY,
+  TEMPLATE_FONT_PROPERTY,
+  serializeSectionLimits,
+  serializeTemplateFont,
+} from "./jrxml/templateSettingsXml";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import { generateCustomTableXML } from "./jrxml/customTableXml";
 import { generateContentsListXML } from "./jrxml/contentsListXml";
@@ -28,6 +34,7 @@ import { reportElementProperties } from "./elementUtils";
 import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
 import { chartImageDataUri } from "./chart/chartImage";
 import { isLocationAddress } from "./location/locationElement";
+import { getWatermarkSetup, isWatermark, watermarkPicture, watermarkPrintWhen } from "./watermark/watermarkElement";
 import { BARCODE_VALUES_PROPERTY, printedBarcodeText, serializeBarcodeValues } from "./barcode/barcodeTypes";
 import { barcodeSizing } from "./barcode/barcodeImage";
 import {
@@ -220,8 +227,14 @@ export function generateJRXMLContent(
       p?.name !== REPORT_PROJECTS_PROPERTY &&
       p?.name !== SPECIAL_PAGES_PROPERTY &&
       p?.name !== HEADING_NUMBERS_PROPERTY &&
-      p?.name !== CONTENTS_STYLES_PROPERTY,
+      p?.name !== CONTENTS_STYLES_PROPERTY &&
+      p?.name !== TEMPLATE_FONT_PROPERTY &&
+      p?.name !== SECTION_LIMITS_PROPERTY,
   );
+  // Template Settings the attributes can't hold (jrxml/templateSettingsXml.ts)
+  const fontValue = serializeTemplateFont(properties.defaultFont);
+  if (fontValue) allProperties.push({ name: TEMPLATE_FONT_PROPERTY, value: fontValue });
+  allProperties.push({ name: SECTION_LIMITS_PROPERTY, value: serializeSectionLimits(properties.bandLimits) });
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
   }
@@ -231,11 +244,11 @@ export function generateJRXMLContent(
   if (headingNumbersValue) allProperties.push({ name: HEADING_NUMBERS_PROPERTY, value: headingNumbersValue });
   const contentsStylesValue = serializeContentsStyles(properties.contentsStyles);
   if (contentsStylesValue) allProperties.push({ name: CONTENTS_STYLES_PROPERTY, value: contentsStylesValue });
-  // The projects chosen in the Report Data list
+  // The template's project: only its id (its name always comes from the projects API)
   if (properties.projects?.length) {
     allProperties.push({
       name: REPORT_PROJECTS_PROPERTY,
-      value: JSON.stringify(properties.projects.map(({ id, name }) => ({ id, name }))),
+      value: JSON.stringify(properties.projects.map(({ id }) => ({ id }))),
     });
   }
   if (allProperties.length > 0) {
@@ -507,7 +520,13 @@ export function generateJRXMLContent(
   const backgroundHeight = Math.max(backgroundBand?.height ?? 0, special.contents ? printableHeight : 0);
   if (backgroundElements.length > 0 || backgroundHeight > 0) {
     jrxml += `<background><band height="${xmlAttr(backgroundHeight)}"${backgroundBand ? splitAttr(backgroundBand) : ""}>`;
+    // The watermark first: it prints behind everything else, the page border
+    // and the contents pages included. Its pages come from its setup.
+    backgroundElements.filter(isWatermark).slice(0, 1).forEach((element) => {
+      jrxml += generateWatermarkXML(element as ImageElement, properties);
+    });
     backgroundElements.forEach((element) => {
+      if (isWatermark(element)) return;
       const prepared = prepare(element, backgroundElements);
       // On every page (cover and contents pages too), except a whole-sheet cover
       jrxml += generateElementXML(
@@ -1608,6 +1627,25 @@ function generateChartXML(element: any): string {
     hAlign: "Center",
     vAlign: "Middle",
     imageExpression: `"${chartImageDataUri(element)}"`,
+  });
+}
+
+// Watermark: an image of the printable area holding the picture the designer
+// drew (a data URI), carrying its setup; printed on the pages its setup asks
+// for. Not drawn yet (or out of date): nothing prints rather than an old look.
+function generateWatermarkXML(element: ImageElement, properties: Parameters<typeof watermarkPrintWhen>[1]): string {
+  const picture = watermarkPicture(element);
+  return generateImageXML({
+    ...element,
+    scaleType: "FillFrame",
+    hAlign: undefined,
+    vAlign: undefined,
+    rotation: undefined,
+    onErrorType: "Blank",
+    mode: "Transparent",
+    box: undefined,
+    printWhenExpression: watermarkPrintWhen(getWatermarkSetup(element), properties),
+    imageExpression: picture ? `"${picture}"` : "null",
   });
 }
 

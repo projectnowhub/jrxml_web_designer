@@ -28,9 +28,12 @@
           <div v-else class="tcm-select-wrap">
             <select class="tcm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
               <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
-              <option v-for="s in sources" :key="s.id" :value="s.id">
-                {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) : s.name }}
-              </option>
+              <!-- Under the CDP app's sidebar headings, with its names -->
+              <optgroup v-for="group in groupTablesLikeCdp(sources)" :key="group.key" :label="group.title">
+                <option v-for="s in group.sections.flatMap((section) => section.tables)" :key="s.id" :value="s.id">
+                  {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.label, count: s.rowCount }) : s.label }}
+                </option>
+              </optgroup>
             </select>
             <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
           </div>
@@ -118,15 +121,12 @@
             <p v-if="tooWide" class="tcm-hint">{{ t("dataTable.config.widerThanPage") }}</p>
           </section>
 
-          <!-- Filters, like a shop's filter panel (sorting is on the grid's headings) -->
+          <!-- Filters, exactly as the CDP app's dashboard widgets (sorting is on the grid's headings) -->
           <section class="tcm-section">
-            <h4><SlidersHorizontal :size="14" aria-hidden="true" />{{ t("dataTable.filter.filtersTitle") }}</h4>
             <TableFilterPanel
               :columns="schema.columns"
               :facets="facets"
               :filters="filters"
-              :suggested-fields="columns.map((c) => c.key)"
-              :match-count="previewLoading ? null : previewTotal"
               @update:filters="filters = $event"
             />
           </section>
@@ -172,6 +172,10 @@
           <span>{{ t("dataTable.config.pickSourceFirst") }}</span>
         </div>
         <div v-else class="tcm-grid-wrap">
+          <!-- New rows on their way over the last ones -->
+          <div v-if="previewLoading && previewRows.length" class="tcm-fetching" role="status">
+            <LoaderCircle :size="14" aria-hidden="true" />{{ t("dataTable.loading") }}
+          </div>
           <DataGrid
             :columns="columns"
             :user-defined-keys="userDefinedKeys"
@@ -200,7 +204,7 @@
     <template #footer>
       <span v-if="applyBlockedReason" class="tcm-footer-hint">{{ applyBlockedReason }}</span>
       <n-button @click="emit('update:visible', false)">{{ t("common.cancel") }}</n-button>
-      <n-button type="primary" :disabled="!!applyBlockedReason" @click="apply">
+      <n-button type="primary" :disabled="!!applyBlockedReason" :loading="schemaLoading || previewLoading" @click="apply">
         {{ t("dataTable.config.apply") }}
       </n-button>
     </template>
@@ -209,6 +213,7 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch, type Component } from "vue";
+import { cdpTableName, groupTablesLikeCdp } from "@/utils/table/tableGroups";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
@@ -225,8 +230,8 @@ import {
   DollarSign,
   Funnel,
   Hash,
+  LoaderCircle,
   ListOrdered,
-  SlidersHorizontal,
   Plus,
   Replace,
   Type,
@@ -580,7 +585,7 @@ const draftBinding = computed<TableDataBinding | null>(() => {
     projectId: projectId.value,
     projectName: projectName.value,
     sourceId: sourceId.value,
-    sourceName: schema.value.name,
+    sourceName: cdpTableName(schema.value.entityName ?? sourceId.value, schema.value.name),
     columns: evenColumnWidths(
       columns.value.map((c) => ({ ...c, label: c.label.trim() || c.key })),
       props.tableWidth,
@@ -681,7 +686,8 @@ const applyBlockedReason = computed(() => {
 });
 
 function apply() {
-  if (!draftBinding.value || applyBlockedReason.value) return;
+  // The rows still on their way: Apply waits for them (it needs their count)
+  if (!draftBinding.value || applyBlockedReason.value || schemaLoading.value || previewLoading.value) return;
   emit("apply", draftBinding.value, printedRowCount.value);
   emit("update:visible", false);
 }
@@ -965,6 +971,7 @@ function apply() {
 }
 
 .tcm-grid-wrap {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -1001,6 +1008,44 @@ function apply() {
   .tcm {
     grid-template-columns: 1fr;
     height: auto;
+  }
+}
+
+/* Fetching while the last result is still shown: a pill over it */
+.tcm-fetching {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(28, 27, 38, 0.12);
+  color: #45425a;
+  font-size: 12px;
+  font-weight: 500;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.tcm-fetching svg {
+  color: #6440f4;
+  animation: tcm-spin 0.9s linear infinite;
+}
+
+@keyframes tcm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tcm-fetching svg {
+    animation: none;
   }
 }
 </style>

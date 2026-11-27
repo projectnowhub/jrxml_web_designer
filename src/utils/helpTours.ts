@@ -7,7 +7,7 @@
 // Properties panel (help.panelTips.<kind>, closed per kind) and the tips shown
 // the first time something is selected (help.firstTips.<id>, once each).
 
-export type TourId = "home" | "templates" | "designer";
+export type TourId = "home" | "designer";
 
 export type TourSide = "top" | "bottom" | "left" | "right";
 
@@ -20,7 +20,7 @@ export interface TourStep {
 }
 
 // First-time tips, by what was selected
-export type FirstTipId = "select" | "text" | "box" | "typedTable" | "dataTable" | "chart" | "location";
+export type FirstTipId = "select" | "text" | "box" | "typedTable" | "dataTable" | "chart" | "location" | "watermark";
 
 export const TOURS: Record<TourId, TourStep[]> = {
   home: [
@@ -31,14 +31,6 @@ export const TOURS: Record<TourId, TourStep[]> = {
     { key: "account", target: '[data-help="account"]', side: "bottom" },
     { key: "help", target: '[data-help="help"]', side: "bottom" },
   ],
-  // My templates: the list, its two views, the order, a template's actions
-  templates: [
-    { key: "list", target: '[data-help="template-list"]', side: "top" },
-    { key: "view", target: '[data-help="template-view"]', side: "bottom" },
-    { key: "order", target: '[data-help="template-order"]', side: "bottom" },
-    { key: "actions", target: '[data-help="template-actions"]', side: "left" },
-    { key: "search", target: '[data-help="search"]', side: "bottom" },
-  ],
   designer: [
     { key: "welcome" },
     { key: "projects", target: ".hpp-select", side: "bottom" },
@@ -48,6 +40,8 @@ export const TOURS: Record<TourId, TourStep[]> = {
     { key: "pages", target: '[data-help="add-page"]', side: "bottom" },
     { key: "preview", target: '[data-help="preview"]', side: "bottom" },
     { key: "help", target: '[data-help="help"]', side: "bottom" },
+    // Default Settings live in the account menu (their own page)
+    { key: "account", target: '[data-help="account"]', side: "bottom" },
   ],
 };
 

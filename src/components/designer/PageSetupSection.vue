@@ -89,21 +89,6 @@
           </span>
         </label>
       </div>
-      <div class="setup-seg is-toggles">
-        <button
-          v-for="style in FONT_STYLES"
-          :key="style.key"
-          type="button"
-          class="setup-seg-btn"
-          :class="{ active: value.font[style.key] }"
-          :aria-pressed="value.font[style.key]"
-          :title="t(style.label)"
-          @click="emit('change', { font: { ...value.font, [style.key]: !value.font[style.key] } })"
-        >
-          <component :is="style.icon" :size="14" :stroke-width="2.25" aria-hidden="true" />
-          {{ t(style.label) }}
-        </button>
-      </div>
       <p v-if="fonts.length <= 1" class="setup-note">
         <Info :size="13" :stroke-width="2" aria-hidden="true" />
         {{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}
@@ -139,7 +124,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Bold, Info, Italic, RectangleHorizontal, RectangleVertical, Underline } from "@lucide/vue";
+import { Info, RectangleHorizontal, RectangleVertical } from "@lucide/vue";
 import SettingHelpButton from "../help/SettingHelpButton.vue";
 import SettingHelpText from "../help/SettingHelpText.vue";
 import { ALL_CONFIGURABLE_BANDS, BAND_TYPE_CONSTANTS } from "@/constants/constants";
@@ -147,7 +132,7 @@ import { DEFAULT_REPORT_FONT, resolveReportFont } from "@/config/fonts.config";
 import { getAvailableFonts } from "@/utils/fontUtils";
 import { PAPER_SIZES, pageSizeOf, paperOf, type Orientation } from "@/utils/pageSetup";
 import type { SettingId } from "@/utils/helpDocs";
-import type { BandType } from "@/types";
+import type { BandType, FontSettings } from "@/types";
 
 export interface PageSetupValue {
   pageWidth: number;
@@ -156,7 +141,7 @@ export interface PageSetupValue {
   rightMargin: number;
   topMargin: number;
   bottomMargin: number;
-  font: { name: string; size: number; isBold: boolean; isItalic: boolean; isUnderline: boolean };
+  font: FontSettings;
   bandTypes: BandType[];
 }
 
@@ -182,11 +167,6 @@ const MARGINS = [
   { key: "bottomMargin", label: "properties.bottomSide" },
   { key: "leftMargin", label: "properties.leftSide" },
   { key: "rightMargin", label: "properties.rightSide" },
-] as const;
-const FONT_STYLES = [
-  { key: "isBold", label: "properties.bold", icon: Bold },
-  { key: "isItalic", label: "properties.italic", icon: Italic },
-  { key: "isUnderline", label: "properties.underline", icon: Underline },
 ] as const;
 
 const fonts = ref<string[]>([DEFAULT_REPORT_FONT]);

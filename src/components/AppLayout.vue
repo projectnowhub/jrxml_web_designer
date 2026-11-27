@@ -23,20 +23,12 @@
           <span class="brand-badge">REPORT STUDIO</span>
         </div>
       </div>
-      <label class="search-box" data-help="search">
-        <Search :size="20" :stroke-width="2.25" aria-hidden="true" />
-        <input
-          v-model="searchQuery"
-          type="search"
-          @keydown.enter="findTemplates"
-          :placeholder="t('layout.searchTemplates')"
-          :aria-label="t('layout.searchTemplates')"
-        />
-        <kbd>/</kbd>
-      </label>
+      <!-- The template search: a box with a list of results -->
+      <TemplateSearch />
       <div class="topbar-actions">
-        <HelpMenu :context="route.name === 'mytemplates' ? 'templates' : 'home'" class="help-icon" />
-        <button class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
+        <HelpMenu context="home" class="help-icon" />
+        <!-- Hidden until there are notifications to show -->
+        <button v-if="SHOW_NOTIFICATIONS" class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <AccountMenu data-help="account" />
@@ -84,21 +76,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import TemplateSearch from "./templates/TemplateSearch.vue";
 import {
   Activity,
   Bell,
-  Files,
   LayoutTemplate,
   Menu,
-  Search,
 } from "@lucide/vue";
 import AccountMenu from "./common/AccountMenu.vue";
 import HelpMenu from "./help/HelpMenu.vue";
 
 const { t } = useI18n();
+
+// The bell is hidden until there are notifications to show
+const SHOW_NOTIFICATIONS = false;
 
 // Activity is hidden until it has something to show (its page and route stay)
 const sidebarMenus = [
@@ -107,12 +101,6 @@ const sidebarMenus = [
     route: "/",
     routeName: "home",
     icon: LayoutTemplate,
-  },
-  {
-    labelKey: "layout.myTemplates",
-    route: "/mytemplates",
-    routeName: "mytemplates",
-    icon: Files,
   },
   {
     labelKey: "layout.activity",
@@ -126,30 +114,6 @@ const sidebarMenus = [
 const router = useRouter();
 const route = useRoute();
 const isSidebarCollapsed = ref(false);
-const searchQuery = ref("");
-
-// The search box lists matching templates in My Templates: typing there
-// filters as you type, Enter elsewhere goes there with the words
-const findTemplates = () => {
-  const q = searchQuery.value.trim();
-  router.push({ name: "mytemplates", query: q ? { q } : {} });
-};
-watch(searchQuery, (value) => {
-  if (route.name !== "mytemplates") return;
-  const q = value.trim();
-  if (q === (route.query.q ?? "")) return;
-  // Keep the view and order; a new search starts on the first page
-  const { q: _q, page: _page, ...rest } = route.query;
-  router.replace({ query: q ? { ...rest, q } : rest });
-});
-watch(
-  () => [route.name, route.query.q] as const,
-  ([name, q]) => {
-    const text = name === "mytemplates" && typeof q === "string" ? q : "";
-    if (text.trim() !== searchQuery.value.trim()) searchQuery.value = text;
-  },
-  { immediate: true },
-);
 </script>
 
 <style scoped>
@@ -409,53 +373,6 @@ button:active {
   background: rgba(124, 92, 247, 0.08);
 }
 
-.search-box {
-  position: absolute;
-  left: 50%;
-  width: min(570px, 38vw);
-  height: 42px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 12px 0 15px;
-  transform: translateX(-50%);
-  border: 1px solid rgba(28, 27, 38, 0.12);
-  border-radius: 11px;
-  color: #8a84a3;
-  background: #f2f3f9;
-  box-sizing: border-box;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    background 0.18s ease;
-}
-.search-box:focus-within {
-  border-color: rgba(124, 92, 247, 0.5);
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
-}
-.search-box input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  outline: 0;
-  color: #1c1b26;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 500;
-}
-.search-box input::placeholder {
-  color: #9a94ab;
-}
-.search-box kbd {
-  padding: 2px 7px;
-  border: 1px solid rgba(28, 27, 38, 0.16);
-  border-radius: 4px;
-  color: #6f6a7e;
-  font-size: 10px;
-  font-weight: 600;
-  font-family: inherit;
-}
 .sidebar-collapsed .sidebar {
   width: 72px;
   flex-basis: 72px;
@@ -492,10 +409,6 @@ button:active {
 @media (max-width: 700px) {
   .brand-name {
     display: none;
-  }
-  .search-box {
-    left: 48%;
-    width: min(300px, 42vw);
   }
   .topbar-actions {
     gap: 5px;
@@ -547,16 +460,6 @@ button:active {
 @media (max-width: 480px) {
   .topbar {
     height: 62px;
-  }
-  .search-box {
-    position: static;
-    width: auto;
-    flex: 1;
-    margin: 0 8px;
-    transform: none;
-  }
-  .search-box kbd {
-    display: none;
   }
   .topbar-actions .help-icon {
     display: none;

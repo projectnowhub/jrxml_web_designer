@@ -5,6 +5,10 @@
 // centre within `threshold` of a target lands exactly on it; otherwise the
 // position goes to the nearest grid line. The grid is drawn per band, so a box's
 // items snap to it in band coordinates (`gridOffset` = the box's position).
+//
+// The grid step is about GRID_SIZE but stretched a little per section, so
+// whole squares fill it and a line falls on each edge (`fitGridStep`); lines
+// sit on whole pixels (`gridLine`), where snapped items land.
 
 export interface SnapRect {
   x: number;
@@ -19,9 +23,15 @@ export interface SnapTargets {
   y: number[];
 }
 
+// Grid step along each axis of a section (see fitGridStep)
+export interface GridStep {
+  x: number;
+  y: number;
+}
+
 export interface SnapOptions {
   // Grid step, or null when Snap to Grid is off
-  grid: number | null;
+  grid: GridStep | null;
   // Alignment distance in container units, or null when Snap to Alignment is off
   threshold: number | null;
   gridOffsetX?: number;
@@ -37,8 +47,20 @@ export interface SnapGuides {
 // Same position, within rounding
 const ON_LINE = 0.5;
 
+// A step close to `base` that divides `length` into whole squares, so the grid
+// starts and ends on the section's edges (A4's 555 px: 56 squares of 9.91 px)
+export function fitGridStep(length: number, base: number): number {
+  if (!(length > 0) || !(base > 0)) return base;
+  return length / Math.max(1, Math.round(length / base));
+}
+
+// Where grid line `index` is drawn and snapped to: on a whole pixel
+export function gridLine(index: number, grid: number): number {
+  return Math.round(index * grid);
+}
+
 export function snapToGrid(value: number, grid: number, offset = 0): number {
-  return Math.round((value + offset) / grid) * grid - offset;
+  return gridLine(Math.round((value + offset) / grid), grid) - offset;
 }
 
 // The shift that puts the closest of `points` on a target, if one is close enough
@@ -91,8 +113,8 @@ export function snapMove(
   targets: SnapTargets,
   options: SnapOptions,
 ): { x: number; y: number; guides: SnapGuides } {
-  const x = snapAxis(rect.x, rect.width, targets.x, options.grid, options.threshold, options.gridOffsetX ?? 0);
-  const y = snapAxis(rect.y, rect.height, targets.y, options.grid, options.threshold, options.gridOffsetY ?? 0);
+  const x = snapAxis(rect.x, rect.width, targets.x, options.grid?.x ?? null, options.threshold, options.gridOffsetX ?? 0);
+  const y = snapAxis(rect.y, rect.height, targets.y, options.grid?.y ?? null, options.threshold, options.gridOffsetY ?? 0);
   return { x: x.start, y: y.start, guides: { x: x.lines, y: y.lines } };
 }
 
@@ -104,18 +126,21 @@ export function snapEdge(
   axis: "x" | "y",
 ): { value: number; lines: number[] } {
   const offset = (axis === "x" ? options.gridOffsetX : options.gridOffsetY) ?? 0;
-  const result = snapAxis(value, 0, targets, options.grid, options.threshold, offset);
+  const result = snapAxis(value, 0, targets, options.grid?.[axis] ?? null, options.threshold, offset);
   return { value: result.start, lines: result.lines };
 }
 
 // Shift+Arrow with Snap to Grid on: the next grid line in that direction
+// (lines are on whole pixels, so the step between them may be 9 or 10)
 export function nextGridLine(value: number, grid: number, direction: 1 | -1, offset = 0): number {
   const position = value + offset;
-  const line =
-    direction > 0
-      ? Math.floor(position / grid + 1e-9) * grid + grid
-      : Math.ceil(position / grid - 1e-9) * grid - grid;
-  return line - offset;
+  let index = Math.round(position / grid);
+  if (direction > 0) {
+    while (gridLine(index, grid) <= position) index += 1;
+  } else {
+    while (gridLine(index, grid) >= position) index -= 1;
+  }
+  return gridLine(index, grid) - offset;
 }
 
 // Target lines from a container's edges and centre plus each element's edges and centre

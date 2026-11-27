@@ -13,6 +13,8 @@ export interface ChartSeries {
   // 1 = drawn against a second scale, for a number of another kind than the
   // first series (e.g. a count next to amounts)
   axis?: 0 | 1;
+  // Horizontal bars: drawn as a line (its series' "Show as")
+  line?: boolean;
 }
 
 export interface ChartTreeNode {

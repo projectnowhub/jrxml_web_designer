@@ -1,5 +1,5 @@
 <template>
-  <div class="pdf-designer">
+  <div class="pdf-designer" :class="{ 'is-read-only': readOnlyTemplate }">
     <!-- Header: as the window narrows, labels turn into icons, then the less
          used tools move into the More menu (headerTier) -->
     <div ref="headerRef" class="designer-header" :class="`tier-${headerTier}`">
@@ -29,7 +29,7 @@
             undoRedo: headerTier >= 5,
             edit: headerTier >= 4,
             view: true,
-            download: headerTier >= 4,
+            download: SHOW_DEVELOPER_TOOLS && headerTier >= 4,
           }"
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
@@ -57,6 +57,8 @@
             <input
               v-model="headerFileName"
               class="document-title-input"
+              :readonly="readOnlyTemplate"
+              @input="limitHeaderTitle"
               data-hint="reportName"
               size="1"
               @focus="isTitleEditing = true"
@@ -68,14 +70,29 @@
           </div>
           <!-- Narrow screens: the icon only (the words are in its tooltip) -->
           <div class="auto-save-badge" :title="saveStatusTitle">
+            <!-- Hidden copies of every state: the badge keeps the room of the
+                 widest one, so "Saving…" / "Save failed" never push the header
+                 tools around or slide under the project picker -->
+            <template v-if="headerTier < 6">
+              <span v-for="label in saveStatusLabels" :key="label" class="save-status-text save-sizer" aria-hidden="true">
+                <span class="save-sizer-icon"></span>
+                <span v-if="headerTier < 4">{{ label }}</span>
+              </span>
+            </template>
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
               <span class="save-spinner"></span>
               <span v-if="headerTier < 4">{{ t("editorHeader.saving") }}</span>
             </span>
-            <span v-else-if="saveStatus === 'error'" class="save-status-text error">
-              <CircleAlert v-if="headerTier >= 4" class="saved-icon" :size="13" :stroke-width="2.5" />
-              <span v-else>{{ t("editorHeader.saveFailed") }}</span>
-            </span>
+            <!-- A failed save: a click tries again -->
+            <button
+              v-else-if="saveStatus === 'error'"
+              type="button"
+              class="save-status-text error save-retry"
+              @click="saveNow"
+            >
+              <CircleAlert class="saved-icon" :size="13" :stroke-width="2.5" />
+              <span v-if="headerTier < 4">{{ t("editorHeader.saveFailed") }}</span>
+            </button>
             <span v-else-if="headerTier < 6" class="save-status-text saved">
               <Check class="saved-icon" :size="13" :stroke-width="2.5" />
               <span v-if="headerTier < 4">{{ t("editorHeader.saved") }}</span>
@@ -85,28 +102,29 @@
 
         <!-- 3. The report's projects (their details and tables are in Report Data) -->
         <HeaderProjectPicker
+          class="header-project-picker"
+          :inert="readOnlyTemplate"
           :projects="reportProjects"
           :compact="headerTier >= 2"
           @update-projects="setReportProjects"
         />
 
-        <span v-if="headerTier < 3" class="toolbar-divider"></span>
+        <span v-if="SHOW_DEVELOPER_TOOLS && headerTier < 3" class="toolbar-divider"></span>
 
-        <!-- 4. File Manager -->
+        <!-- 4. File Manager (developers only: New / Open, a .jrxml from the computer) -->
         <FileManager
+          v-if="SHOW_DEVELOPER_TOOLS"
           ref="fileManagerRef"
           data-hint="file"
           :compact="headerTier >= 3"
           @create-new-file="createNewFile"
-          @load-file="loadFile"
           @open-jrxml="openJrxmlFile"
-          @delete-all-files="deleteAllFiles"
         />
 
         <!-- 5. Undo / Redo -->
         <template v-if="headerTier < 5">
           <span class="toolbar-divider"></span>
-          <div class="header-undo-redo">
+          <div class="header-undo-redo" :inert="readOnlyTemplate">
             <n-button
               data-hint="undo"
               @click="undo"
@@ -133,7 +151,7 @@
         <!-- 6. Delete, Copy, Paste, Add Page -->
         <template v-if="headerTier < 4">
           <span class="toolbar-divider"></span>
-          <div class="header-toolbar-ops">
+          <div class="header-toolbar-ops" :inert="readOnlyTemplate">
             <AddPageMenu
               data-help="add-page"
               data-hint="addPage"
@@ -172,22 +190,23 @@
 
           <span class="toolbar-divider"></span>
 
-          <!-- 8. Show Bottom Panel -->
-          <!-- The report's Default Settings (paper, margins, page parts, font): an icon button -->
+          <!-- 8. The bottom panel (developers only: JRXML Content, Report Bands,
+               the settings JSONs). Default Settings have their own page (account menu) -->
           <button
+            v-if="SHOW_DEVELOPER_TOOLS"
             type="button"
-            class="toolbar-btn default-settings-btn"
+            class="toolbar-btn developer-panel-btn"
             :class="{ 'is-open': showBottomPanel }"
             data-hint="bottomPanel"
             :aria-pressed="showBottomPanel"
-            :aria-label="t('actions.defaultSettings')"
+            :aria-label="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
             :title="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
             @click="toggleBottomPanel"
           >
-            <SlidersHorizontal :size="16" :stroke-width="2" aria-hidden="true" />
+            <component :is="showBottomPanel ? PanelBottomClose : PanelBottom" :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
 
-          <span class="toolbar-divider"></span>
+          <span v-if="SHOW_DEVELOPER_TOOLS" class="toolbar-divider"></span>
 
           <!-- 9. Snap & grid (dropdown) -->
           <SnapMenu data-hint="snap" :compact="headerTier >= 2" />
@@ -198,9 +217,9 @@
         <!-- 10. Help: the tour, the Quick guide, shortcuts, the AI assistant -->
         <HelpMenu context="designer" :show-label="headerTier < 2" />
 
-        <!-- 11. Download JRXML / Preview PDF -->
+        <!-- 11. Download JRXML (developers only) / Preview PDF -->
         <button
-          v-if="headerTier < 4"
+          v-if="SHOW_DEVELOPER_TOOLS && headerTier < 4"
           type="button"
           class="header-btn header-btn-secondary"
           data-hint="download"
@@ -227,7 +246,7 @@
         </button>
 
         <!-- 12. Account menu (language, sign out; the profile is edited in the CDP app) -->
-        <AccountMenu />
+        <AccountMenu data-help="account" />
       </div>
     </div>
 
@@ -270,6 +289,8 @@
       >
         <template #default="{ toggleCollapse }">
         <ElementLibrary
+          class="read-only-lockable"
+          :inert="readOnlyTemplate"
           :elements="elements"
           :projects="reportProjects"
           @drag-start="handleDragStart"
@@ -279,6 +300,7 @@
           @add-chart-from-source="addChartFromSource"
           @insert-barcode="addBarcode"
           @insert-table="addTable"
+          @insert-image="openImageTileChooser"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -303,6 +325,52 @@
         class="design-area-wrapper"
         style="position: relative; flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column;"
       >
+        <!-- A server template is being fetched (/designer/<id>) or made (Create template) -->
+        <div v-if="openingDefaultTemplate || creatingTemplate" class="opening-template" role="status" aria-live="polite">
+          <div class="opening-template-page" aria-hidden="true">
+            <SkeletonBlock width="55%" height="14px" />
+            <SkeletonBlock width="35%" height="9px" />
+            <SkeletonBlock height="70px" radius="8px" />
+            <SkeletonBlock width="80%" height="9px" />
+            <SkeletonBlock width="65%" height="9px" />
+          </div>
+          <span>{{ t(creatingTemplate ? "reportCatalog.create.creating" : "reportCatalog.defaultTemplates.opening") }}</span>
+        </div>
+        <!-- A server template being looked at: it stays as it is; Duplicate
+             (asked first) has the server copy it into Templates -->
+        <div v-if="viewingDefaultTemplate" class="default-template-bar" role="status">
+          <Lock :size="15" :stroke-width="2.25" aria-hidden="true" />
+          <span>
+            <strong>{{ t(`${openedTemplateTexts}.barTitle`, { name: openedDefaultTemplate?.name }) }}</strong>
+            {{ t(`${openedTemplateTexts}.barText`) }}
+          </span>
+          <button type="button" :title="t('reportCatalog.copy.hint')" @click="copyDialogOpen = true">
+            <Copy :size="14" :stroke-width="2.25" aria-hidden="true" />
+            {{ t("home.menu.duplicate") }}
+          </button>
+        </div>
+        <!-- On the body (the canvas area moves with a transform); keys typed in
+             it never reach the designer's shortcuts -->
+        <Teleport to="body">
+          <div @keydown.stop>
+            <ConfirmModal
+              v-model:visible="copyDialogOpen"
+              :title="t('reportCatalog.copy.title')"
+              :message="t('reportCatalog.copy.message', { name: openedDefaultTemplate?.name })"
+              :confirm-text="t('home.menu.duplicate')"
+              @confirm="duplicateOpenedTemplate"
+            />
+            <!-- The copy is made: open it now, or stay on the default -->
+            <ConfirmModal
+              v-model:visible="openCopyDialog"
+              :title="t('reportCatalog.copy.openTitle')"
+              :message="t('reportCatalog.copy.openMessage', { name: madeCopy?.name })"
+              :confirm-text="t('reportCatalog.copy.openConfirm')"
+              :cancel-text="t('reportCatalog.copy.openCancel')"
+              @confirm="madeCopy && router.push({ name: 'designer', params: { id: madeCopy.id } })"
+            />
+          </div>
+        </Teleport>
         <!-- The first time something is selected: how to work with it (Help) -->
         <FirstTimeTip />
         <!-- Help window (a popup the user drags anywhere): help for the selected
@@ -394,6 +462,7 @@
         <div class="right-panel-tabs">
           <div
             class="right-panel-seg"
+            :class="{ 'is-single': !SHOW_AI_ASSISTANT }"
             role="tablist"
             :style="{ '--tab-index': rightPanelTab === 'ai' ? 1 : 0 }"
           >
@@ -409,7 +478,9 @@
               <SlidersHorizontal :size="14" :stroke-width="2" aria-hidden="true" />
               {{ t("properties.title") }}
             </button>
+            <!-- The AI Assistant: hidden on staging and production for now -->
             <button
+              v-if="SHOW_AI_ASSISTANT"
               type="button"
               role="tab"
               class="right-panel-tab"
@@ -437,9 +508,10 @@
         <!-- Element properties component -->
         <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'properties'">
+          <!-- A default template: its settings shown, nothing can be changed -->
+          <fieldset class="read-only-fieldset" :disabled="readOnlyTemplate">
           <ElementProperties
             @update:bands="bands = $event"
-            @page-setup-change="handlePageSetupChange"
             @delete-element="deleteElement"
             @fit-to-text="
               selectedElement &&
@@ -458,13 +530,14 @@
             @fill-contents-list="fillContentsList"
             @configure-chart="openChartConfigForSelection"
           />
+          </fieldset>
         </div>
 
         </Transition>
 
         <!-- AI Assistant panel -->
         <Transition name="right-panel-fade">
-        <div v-show="rightPanelTab === 'ai'" class="ai-panel-container">
+        <div v-if="SHOW_AI_ASSISTANT" v-show="rightPanelTab === 'ai'" class="ai-panel-container read-only-lockable" :inert="readOnlyTemplate">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
             :initial-height="aiChatPanelHeight"
@@ -482,12 +555,11 @@
 
     <!-- Bottom tab area -->
     <BottomPanel
+      v-if="SHOW_DEVELOPER_TOOLS"
       :visible="showBottomPanel"
       :initial-height="bottomPanelHeight"
-      :all-band-types="allBandTypes"
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
-      @update:report-properties="reportProperties = $event"
       @page-setup-change="handlePageSetupChange"
       @update:jrxml-content="jrxmlContent = $event"
       @copy-jrxml="copyJRXML"
@@ -685,11 +757,19 @@
         </div>
       </div>
     </div>
+
+    <!-- The Image tile's picture chooser: the picture comes first, then the image is added -->
+    <PictureChooserModal
+      v-model:visible="tilePicture.open"
+      :initial-tab="tilePicture.tab"
+      @choose="addImageWithPicture"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import AddPageMenu from "./designer/AddPageMenu.vue";
+import { SHOW_AI_ASSISTANT, SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpMenu from "./help/HelpMenu.vue";
@@ -732,11 +812,14 @@ import {
   Download,
   Eye,
   FilePlus,
+  Lock,
   Redo2,
   SendToBack,
   RotateCcw,
   Settings,
   SlidersHorizontal,
+  PanelBottom,
+  PanelBottomClose,
   Sparkles,
   SquareArrowOutDownRight,
   SquarePlus,
@@ -779,10 +862,14 @@ import {
   projectFieldSize,
 } from "@/utils/projectFields";
 import { buildProjectListTable } from "@/utils/projectTables";
-import { fetchProject, prefetchProjects, projectQuery } from "@/queries/projectQueries";
+import { prefetchProjects, projectQuery } from "@/queries/projectQueries";
+import { fetchDefaultTemplate, fetchNewestCopyId, useCopyTemplate } from "@/queries/reportCatalogQueries";
+import { ApiError } from "@/services/apiClient";
+import { reportServerErrorText } from "@/services/helpers/reportCatalogMappers";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import { isProjectListSource } from "@/queries/dataSourceQueries";
 import { useQueries } from "@tanstack/vue-query";
-import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
+import { loadReportDefaults } from "@/utils/reportDefaults";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
@@ -808,7 +895,6 @@ import {
   usedDatasetNames,
   usedTableNames,
 } from "@/utils/table/tableDocument";
-import type { DesignerFile } from "@/types/designerFile";
 import type { MCPContext, PageToolRequest } from "@/mcp";
 import { checkWebMCPSupport } from "@/utils/browserCompatibility";
 import {
@@ -822,13 +908,14 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { useDesignerFiles } from "@/composables/useDesignerFiles";
+import { useServerTemplateSave } from "@/composables/useServerTemplateSave";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { useEditorStore } from "@/stores/editor";
 import { useFilesStore } from "@/stores/files";
 import { useHelpStore } from "@/stores/help";
+import { useUserSettingsStore } from "@/stores/userSettings";
 import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
 import { cleanLegacyAutoDateElement } from "@/utils/autoDate";
 import { headingNumberText, headingNumbering, listChain, sectionHeadings, syncFollowingLists } from "@/utils/headingSync";
@@ -839,6 +926,7 @@ import {
   snapEdge,
   snapMove,
   snapToGrid,
+  type GridStep,
   type SnapGuides,
   type SnapOptions,
   type SnapRect,
@@ -858,21 +946,19 @@ import {
   prefersReducedMotion,
   REPORT_CONSTANTS,
   UI_CONSTANTS,
+  TEMPLATE_NAME_MAX_LENGTH,
+  getEffectiveDefaultBandConfig,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
 import { getBandDisplayName } from "../utils/bandUtils";
 import {
   buildRulerMarks,
+  sectionGridStep,
   type RulerLabel,
   type RulerTick,
 } from "../utils/rulerUtils";
 
-import {
-  clearLocalStorage,
-  loadFromLocalStorage,
-  saveToLocalStorage,
-} from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
@@ -881,7 +967,10 @@ import {
   getImageShape,
   measureTextElementWidth,
   refreshUuids,
+  setImagePicture,
 } from "../utils/elementUtils";
+import { toImageExpression } from "../services/imageService";
+import type { ChosenPicture } from "../types/projectPhoto";
 import {
   applyBorderPreset,
   buildFrameTemplate,
@@ -891,7 +980,9 @@ import {
   isBoxPart,
   markBoxPart,
   releaseBoxPart,
-  fitChildrenToFrame,
+  fitFrameContent,
+  frameFitReference,
+  frameMinimumSize,
   isFrameTemplateType,
   PAGE_BORDER_TYPE,
   PRESET_SIDE_INSET,
@@ -903,8 +994,11 @@ import {
   collectHeadings,
   entriesFor,
   hasProperty,
+  minContentsListWidth,
+  minContentsRowHeight,
   rowsThatFit,
   SECTION_HEADING_PROPERTY,
+  shownCount,
   SUB_HEADING_PROPERTY,
   syncContentsListSize,
 } from "../utils/contentsList";
@@ -919,6 +1013,7 @@ import {
   type ContentsDesignType,
 } from "../utils/pageDesigns";
 import DesignChooserModal from "./modals/DesignChooserModal.vue";
+import PictureChooserModal from "./modals/PictureChooserModal.vue";
 import {
   isSpecialPage,
   pageKind,
@@ -946,6 +1041,8 @@ import {
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
+import { useServerTemplateCreate } from "@/composables/useServerTemplateCreate";
+import { isServerTemplateId, newLocalTemplateId } from "@/utils/templateIds";
 
 // Ensure DOMParser is available in the browser environment
 // Removed the unused getDOMParser function
@@ -967,7 +1064,8 @@ import {
 import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
 import { isProjectValue } from "../utils/projectValue";
 import { canvasShowsHtml, formatCanvasText } from "../utils/canvasText";
-import { ensureTemplateProject } from "../utils/reportRun";
+import { ensureTemplateProject, runTemplatePdf } from "../utils/reportRun";
+import type { TemplatePdfRun } from "@/types/reportCatalog";
 import {
   buildLocationElement,
   getLocationSetup,
@@ -982,16 +1080,19 @@ import {
   type PlaceField,
 } from "../utils/location/locationElement";
 import { ensureLocationMaps, refreshLocationMaps } from "../utils/location/locationMaps";
+import { buildWatermarkElement, findWatermark, isWatermark, WATERMARK_TYPE } from "../utils/watermark/watermarkElement";
+import { ensureWatermarks, refreshWatermarks } from "../utils/watermark/watermarkPictures";
 import { buildChartElement } from "../utils/chart/chartElement";
 import { startDragScrolling, type DragScrollSession } from "../utils/dragAutoScroll";
 import {
   createElement,
   getAllElements as getAllElementConfigs,
 } from "@/components/elements/ElementRegistry";
+import { TemplateContentProblem } from "@/enums/templateContentProblem";
 
 // Import the default JRXML example file
 
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 
 // Designer state lives in Pinia stores (src/stores): the report model and
 // undo/redo, what is selected, and how the designer is shown (zoom, snapping,
@@ -1033,6 +1134,10 @@ const mcpContext = computed<MCPContext>(() => ({
   undo: () => undo(),
   redo: () => redo(),
   onPageSetupChange: () => handlePageSetupChange(),
+  // check_pdf: the same as Preview PDF (saved, then run on the report server)
+  buildPdf: async () => {
+    return runTemplatePdf(await prepareReportForPreview());
+  },
   pageTool: (request) => runPageTool(request),
 }));
 
@@ -1059,19 +1164,9 @@ const {
 } = storeToRefs(reportStore);
 const { saveStateToHistory } = reportStore;
 
-// File management related state
-const {
-  currentFileName,
-  currentFileId,
-  loadFilesFromStorage,
-  findFileById,
-  saveCurrentFileContent,
-  setLastFile,
-  renameFile,
-  clearStoredFiles,
-} = useDesignerFiles({
-  defaultFileName: t("fileManager.untitledReport"),
-});
+// The open template: its name (the header's) and id (the server row's once
+// it is on the report server)
+const { currentFileName, currentFileId } = storeToRefs(filesStore);
 
 // Editable document title in header (Google Docs style)
 const headerFileName = ref(currentFileName.value);
@@ -1083,6 +1178,18 @@ watch(currentFileName, (newVal) => {
   }
 });
 
+// The header's name keeps at most TEMPLATE_NAME_MAX_LENGTH letters, typed or
+// pasted: the rest is cut off and a warning says so (once per few seconds,
+// not on every key held down)
+let titleLimitWarnedAt = 0;
+function limitHeaderTitle() {
+  if (headerFileName.value.length <= TEMPLATE_NAME_MAX_LENGTH) return;
+  headerFileName.value = headerFileName.value.slice(0, TEMPLATE_NAME_MAX_LENGTH);
+  if (Date.now() - titleLimitWarnedAt < 3000) return;
+  titleLimitWarnedAt = Date.now();
+  notification.warning(t("editorHeader.nameTooLong", { max: TEMPLATE_NAME_MAX_LENGTH }));
+}
+
 function handleHeaderTitleCommit() {
   isTitleEditing.value = false;
   if (!renameReport(headerFileName.value)) {
@@ -1093,10 +1200,9 @@ function handleHeaderTitleCommit() {
 // The report's one name (header, Template Settings, the saved file, the name
 // inside the report file); an empty name is refused
 function renameReport(name: string): boolean {
-  const trimmed = name.trim();
+  const trimmed = name.trim().slice(0, TEMPLATE_NAME_MAX_LENGTH).trim();
   if (!trimmed) return false;
   if (trimmed === currentFileName.value) return true;
-  if (currentFileId.value) renameFile(currentFileId.value, trimmed);
   currentFileName.value = trimmed;
   reportStore.updateJrxml();
   scheduleAutoSave(true);
@@ -1107,7 +1213,66 @@ function renameReport(name: string): boolean {
 // Whether the latest changes are saved (files store)
 const { saveStatus } = storeToRefs(filesStore);
 const isLoadingFile = ref(false);
-let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+// A default template (the report server's, read only) being looked at: the
+// browser id it is shown under, its name and its server id (sourceId)
+const openedDefaultTemplate = ref<{ fileId: string; name: string; isDefault: boolean; sourceId?: string } | null>(null);
+// Its file is still being fetched
+const openingDefaultTemplate = ref(false);
+// The open template is a default being looked at (not saved as the user's yet)
+const viewingDefaultTemplate = computed(() => {
+  const opened = openedDefaultTemplate.value;
+  return !!opened && opened.fileId === currentFileId.value;
+});
+// A default template can only be looked at, previewed and duplicated: every
+// editing tool is off (header tools, library, page, settings, AI, keys,
+// right-click, drops) and the report store puts back anything that slips through
+const readOnlyTemplate = computed(() => viewingDefaultTemplate.value);
+watch(readOnlyTemplate, (locked) => (reportStore.readOnly = locked), { immediate: true });
+let blockedToastAt = 0;
+watch(
+  () => reportStore.blockedChanges,
+  () => {
+    if (Date.now() - blockedToastAt < 3000) return;
+    blockedToastAt = Date.now();
+    notification.info(t("reportCatalog.defaultTemplates.readOnly"));
+  },
+);
+// The bar's texts: a default template's, or one of the tenant's own on the server
+const openedTemplateTexts = computed(() => "reportCatalog.defaultTemplates");
+const copyDialogOpen = ref(false);
+// A new template (Create template, File → New, /designer) is made on the
+// report server at once under a free "Untitled Template N" and opened from
+// there at /designer/<id> (useServerTemplateCreate)
+const creatingTemplate = ref(false);
+// Templates just made here: their server content is the create's own HTML
+// template, so opening them as an empty layout needs no warning
+const newServerTemplateIds = new Set<string>();
+const { createServerTemplate } = useServerTemplateCreate();
+// The user's Default Settings (a new template takes them, read again first)
+const userSettings = useUserSettingsStore();
+
+// The open template saved to the report server (PUT /v2/reports/{id}/edit)
+// once the changes pause, and at once when it is left. The server is the only
+// place a template is kept: nothing goes into this browser's storage
+const serverSave = useServerTemplateSave({
+  snapshot: () => {
+    if (isLoadingFile.value) return null;
+    const id = currentFileId.value;
+    if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) return null;
+    return { id, name: currentFileName.value.trim() || openedTemplateName, jrxml: reportStore.jrxmlContent };
+  },
+  onSaved: (saved) => {
+    // The server's name is now this one, and it has changes: an undo back to
+    // how the template opened is saved too
+    if (saved.id === currentFileId.value) {
+      openedTemplateName = saved.name;
+      savedTemplateId = saved.id;
+    }
+  },
+});
+
+// Every label the save badge can show (it keeps the widest one's room)
+const saveStatusLabels = computed(() => [t("editorHeader.saving"), t("editorHeader.saved"), t("editorHeader.saveFailed")]);
 
 const saveStatusTitle = computed(() => {
   if (saveStatus.value === "saving") return t("editorHeader.savingTitle");
@@ -1115,32 +1280,40 @@ const saveStatusTitle = computed(() => {
   return t("editorHeader.savedTitle");
 });
 
-function flushAutoSave(): boolean {
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = null;
-  }
-  return saveCurrentFileToStorage(false);
+// Leaving the template (another one, a new one, the page closing or hidden):
+// its changes are sent to the server at once
+function flushAutoSave(): void {
+  void serverSave.flush();
 }
 
+// The page closing: saved at once, and the browser asks first while the
+// server doesn't have the changes yet (they exist nowhere else)
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  flushAutoSave();
+  if (serverSave.hasUnsaved()) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+}
+
+// The tab hidden (switched away, minimised, closed on a phone): saved at once
+function handleVisibilityChange() {
+  if (document.visibilityState === "hidden") flushAutoSave();
+}
+
+// A change: saved on the server once the changes pause (`immediate`: at
+// once, e.g. a rename)
 function scheduleAutoSave(immediate = false) {
   if (isLoadingFile.value) return;
+  if (immediate) void serverSave.flush();
+  else serverSave.schedule();
+}
 
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = null;
-  }
-
-  saveStatus.value = "saving";
-
-  if (immediate) {
-    saveCurrentFileToStorage(false);
-  } else {
-    autoSaveTimer = setTimeout(() => {
-      saveCurrentFileToStorage(false);
-      autoSaveTimer = null;
-    }, 400);
-  }
+// Ctrl+S and the save badge after a failure: saved on the server now
+async function saveNow(): Promise<void> {
+  if (readOnlyTemplate.value) return;
+  const ok = await serverSave.flush(true);
+  if (ok) notification.success(t("notifications.fileSavedSuccess"));
 }
 
 function onTitleEnter(e: Event) {
@@ -1167,188 +1340,66 @@ watch(
   },
 );
 
-function createNewFile(saveOpenFile = true) {
-  if (saveOpenFile) flushAutoSave();
-  isLoadingFile.value = true;
-
-  // Logic for creating a new file
-  const timestamp = new Date().getTime();
-  currentFileName.value = filesStore.newReportName(t("fileManager.untitledReport"));
-  currentFileId.value = `file_${timestamp}`;
-
-  // A new, empty report (every part reset, no undo history, nothing selected)
-  reportStore.loadReport({});
-
-  nextTick(() => {
-    isLoadingFile.value = false;
-    updateJRXML();
-    saveCurrentFileToStorage(false);
-  });
+// File → New, Alt+N: a new template made on the report server and opened
+function createNewFile() {
+  flushAutoSave();
+  void createAndOpenServerTemplate(t("fileManager.untitledReport"));
 }
 
-// Delete every report saved in this browser and start a new, empty one. The
-// open report is not saved first, or it would come straight back
-function deleteAllFiles() {
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = null;
-  }
-  clearStoredFiles();
-  clearLocalStorage();
-  createNewFile(false);
-  notification.success(t("fileManager.deleteAllFilesDone"));
-}
-
-// A new template nobody has touched: nothing on its pages, still its
-// "Untitled Template" name, never saved. It isn't saved, so opening the
-// designer and leaving doesn't fill the template list with empty ones
-function isUntouchedNewTemplate(): boolean {
-  if (currentFileId.value && findFileById(currentFileId.value)) return false;
-  if (!currentFileName.value.startsWith(t("fileManager.untitledReport"))) return false;
-  return bands.value.every((band) => !(band.elements?.length));
-}
-
-function saveCurrentFileToStorage(showNotification = false): boolean {
-  if (isLoadingFile.value) {
-    return false;
-  }
-  if (isUntouchedNewTemplate()) {
-    saveStatus.value = "saved";
-    return true;
-  }
-
+// Makes a template on the report server and opens it from there at
+// /designer/<id>: a new one under the first free "Untitled Template N" over
+// every template's name, or (`jrxml`) a .jrxml from the computer under its
+// file's name, its JRXML held in memory (`uploadedJrxml`, never in the
+// browser's storage) until it opens and is saved on the server. When it
+// fails, the open template stays with a message
+async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Promise<void> {
+  if (creatingTemplate.value) return;
+  creatingTemplate.value = true;
   try {
-    saveStatus.value = "saving";
-
-    if (!currentFileId.value) {
-      currentFileId.value = `file_${Date.now()}`;
+    const { name, id } = await createServerTemplate(wanted, { exactName: jrxml !== undefined });
+    if (!id) {
+      notification.error(t("reportCatalog.create.notFound", { name }));
+      return;
     }
-
-    const fileData = saveCurrentFile();
-    const ok = saveCurrentFileContent(fileData);
-    saveToLocalStorageWrapper();
-
-    if (ok) {
-      saveStatus.value = "saved";
-      if (showNotification) {
-        notification.success(t("notifications.fileSavedSuccess"));
-      }
-    } else {
-      saveStatus.value = "error";
-      if (showNotification) {
-        notification.error(t("notifications.fileSaveFailed"));
-      }
-    }
-    return ok;
+    if (jrxml !== undefined) uploadedJrxml = { id, jrxml };
+    else newServerTemplateIds.add(id);
+    const go = typeof route.params.id === "string" && route.params.id ? router.push : router.replace;
+    await go({ name: "designer", params: { id } });
   } catch (error) {
-    console.error("Auto-save error:", error);
-    saveStatus.value = "error";
-    if (showNotification) {
-      notification.error(t("notifications.fileSaveFailed"));
-    }
-    return false;
+    const reason = await reportServerErrorText(error, t("reportCatalog.errors.server"));
+    notification.error(t("reportCatalog.create.failed", { reason }));
+  } finally {
+    creatingTemplate.value = false;
   }
 }
 
-function loadFile(fileData: DesignerFile | any) {
-  try {
-    flushAutoSave();
-    isLoadingFile.value = true;
+// A .jrxml from the computer for a template just made on the server, opened
+// with it and saved there at once (in memory only)
+let uploadedJrxml: { id: string; jrxml: string } | null = null;
+// The template opened from the server: the name it came with, so a rename
+// counts as a change
+let openedTemplateName = "";
+// The open template has been saved on the server since it opened
+let savedTemplateId = "";
+// The open template is to be saved on the server even unchanged: it was just
+// made and took the user's Default Settings (so it keeps them), or Preview PDF
+// runs it while the server holds no JRXML for it (opened as an empty layout)
+let saveAnywayId = "";
+// The open server template's Jmix report (what Preview PDF runs), and whether
+// its server content couldn't be opened (no JRXML there yet)
+let templateReportId = "";
+let templateReportParameters: TemplatePdfRun["parameters"] = [];
+let openedWithoutJrxml = false;
 
-    // Parse the file content
-    const fileContent =
-      typeof fileData.content === "string"
-        ? JSON.parse(fileData.content)
-        : fileData;
-
-    // Open it: every part of the report is set (what the file lacks gets its
-    // new-report value), the undo history starts empty, nothing is selected
-    reportStore.loadReport({
-      reportProperties: fileContent.reportProperties,
-      bands: fileContent.bands,
-      reportFields: fileContent.reportFields,
-      reportParameters: fileContent.reportParameters,
-      subDatasets: fileContent.subDatasets,
-      reportVariables: fileContent.reportVariables,
-      reportGroups: fileContent.reportGroups,
-      tableStyles: Array.isArray(fileContent.tableStyles)
-        ? parseSavedTableStyles(JSON.stringify(fileContent.tableStyles))
-        : [],
-      jrxmlContent: fileContent.jrxmlContent,
-    });
-
-    // Update the current file info
-    currentFileName.value = fileData.name || t("fileManager.untitledReport");
-    currentFileId.value = fileData.id || `file_${Date.now()}`;
-    if (fileData.id) {
-      setLastFile({ id: fileData.id, name: fileData.name });
-    }
-
-    nextTick(() => {
-      isLoadingFile.value = false;
-      updateJRXML();
-      updateOutOfBoundsElements();
-      saveStatus.value = "saved";
-    });
-  } catch (error) {
-    isLoadingFile.value = false;
-    console.error("Failed to load file:", error);
-    notification.error(t("fileManager.invalidFileFormat"));
-  }
-}
-
-function saveCurrentFile() {
-  if (!currentFileId.value) {
-    currentFileId.value = `file_${Date.now()}`;
-  }
-
-  // Create a deep clone of bands so border properties can be processed
-  const processedBands = JSON.parse(JSON.stringify(bands.value));
-
-  // Process elements in each band, filtering out border properties with a width of 0
-  processedBands.forEach((band: any) => {
-    if (band.elements && Array.isArray(band.elements)) {
-      band.elements.forEach((element: any) => {
-        if (element.box) {
-          // Handle the new border model
-          if (element.box.pen && element.box.pen.lineWidth <= 0) {
-            delete element.box.pen;
-          }
-
-          // Handle borders on each side
-          ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
-            if (element.box[penType] && element.box[penType].lineWidth <= 0) {
-              delete element.box[penType];
-            }
-          });
-
-          // If the box object is empty, remove the entire box property
-          if (Object.keys(element.box).length === 0) {
-            delete element.box;
-          }
-        }
-      });
-    }
-  });
-
-  // Prepare the data to save
-  const fileData = {
-    id: currentFileId.value,
-    name: currentFileName.value,
-    reportProperties: reportProperties.value,
-    bands: processedBands,
-    reportFields: reportFields.value,
-    reportParameters: reportParameters.value,
-    subDatasets: subDatasets.value,
-    reportVariables: reportVariables.value,
-    reportGroups: reportGroups.value,
-    tableStyles: tableStyles.value,
-    jrxmlContent: jrxmlContent.value,
-    lastModified: new Date().toISOString(),
-  };
-
-  // Return the file data
-  return fileData;
+// Changed since it opened: an undo step past the first, renamed, or saved
+// (its changes stay saved, an undo back included)
+function changedSinceOpen(id: string): boolean {
+  return (
+    reportStore.historyStack.length > 1 ||
+    currentFileName.value !== openedTemplateName ||
+    savedTemplateId === id ||
+    saveAnywayId === id
+  );
 }
 
 // Available elements
@@ -1521,7 +1572,8 @@ type PageAction =
   | "chooseDesign"
   | "addToc"
   | "wholeSheet"
-  | "keepMargins";
+  | "keepMargins"
+  | "watermark";
 
 // ---- Designs for the cover / contents pages (utils/pageDesigns.ts) ----
 
@@ -1798,6 +1850,14 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
     if (normalPages <= 1) pageCount.value = totalPages.value + 1;
   };
   switch (action) {
+    // The template's watermark (any page's ⋯ menu): selected (its settings
+    // open), or added when there is none
+    case "watermark": {
+      const existing = findWatermark(bands.value);
+      if (existing) selectElement(existing.bandIndex, existing.elementIndex);
+      else addWatermark();
+      return;
+    }
     case "addCover":
       if (cover) return;
       openDesignChooser("cover", "add", 0);
@@ -2040,20 +2100,8 @@ const setReportProjects = (projects: ReportProject[]) => {
     notification.info(t("reportData.projectSwitched", { project: project.name }));
   }
   updateJRXML();
-  // New templates start with the project chosen last (utils/lastProject.ts)
-  if (projects.length) rememberLastProject(projects[projects.length - 1]);
 };
 
-// The remembered project no longer exists (deleted, or another tenant's): it
-// is forgotten, so the next new template starts without it. A template's own
-// projects are never changed here (Report Data says when one can't be read)
-const checkRememberedProject = async () => {
-  const remembered = lastProject();
-  if (!remembered) return;
-  const found = await fetchProject(remembered.id).catch(() => undefined);
-  if (found === null && lastProject()?.id === remembered.id) forgetLastProject();
-};
-onMounted(checkRememberedProject);
 
 
 
@@ -2395,7 +2443,17 @@ interface SnapContext {
   pageIndex: number;
   offset: { x: number; y: number };
   targets: SnapTargets;
+  // The grid of the band on that page, as the canvas draws it
+  grid: GridStep;
 }
+
+// The grid step of a band on a page: whole squares of about GRID_SIZE across
+// its width and height (the sheet or printable page on a cover / contents page)
+const gridStepFor = (bandIndex: number, pageIndex?: number): GridStep => {
+  const band = bands.value[bandIndex];
+  const area = band?.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(reportProperties.value, pageIndex) : null;
+  return sectionGridStep(area ? area.width : printableWidth.value, bandAreaHeight(bandIndex, pageIndex));
+};
 
 const buildSnapContext = (
   bandIndex: number,
@@ -2440,6 +2498,7 @@ const buildSnapContext = (
     bandIndex,
     pageIndex,
     offset,
+    grid: gridStepFor(bandIndex, pageIndex),
     targets: {
       x: [...new Set(xs)].map((v) => v - offset.x),
       y: [...new Set(ys)].map((v) => v - offset.y),
@@ -2450,11 +2509,12 @@ const buildSnapContext = (
 // Snap settings for one mouse move or drop; holding Ctrl/Cmd skips snapping
 const getSnapOptions = (
   event: { ctrlKey?: boolean; metaKey?: boolean } | null,
-  offset = { x: 0, y: 0 },
+  context: Pick<SnapContext, "grid" | "offset">,
 ): SnapOptions => {
   const bypass = !!(event?.ctrlKey || event?.metaKey);
+  const offset = context.offset;
   return {
-    grid: enableSnapToGrid.value && !bypass ? UI_CONSTANTS.GRID_SIZE : null,
+    grid: enableSnapToGrid.value && !bypass ? context.grid : null,
     threshold:
       enableSnapToAlignment.value && !bypass
         ? ALIGN_SNAP_SCREEN_PX / zoomLevel.value
@@ -2525,11 +2585,14 @@ const warnTooTallForBand = (bandIndex: number, height: number, maxHeight: number
 // While dragging: the target band turns red when the element can't fit in it
 const dropTargetBlocked = ref(false);
 
-// While dragging the Page Border tile over the page: the Background band is the target
+// Tiles whose item goes to the Background band wherever it is dropped
+const isBackgroundTile = (type: string | undefined) => type === PAGE_BORDER_TYPE || type === WATERMARK_TYPE;
+
+// While dragging the Page Border or Watermark tile over the page: the Background band is the target
 const backgroundDropTarget = computed(
   () =>
     highlightedBandIndex.value !== null &&
-    draggedLibraryElement.value?.type === PAGE_BORDER_TYPE,
+    isBackgroundTile(draggedLibraryElement.value?.type),
 );
 
 // Whether an element at (x, y) in a band would land in one of its boxes
@@ -2808,6 +2871,49 @@ const addPageBorder = (droppedOnPage?: number) => {
   updateJRXML();
 };
 
+// Tell the user the template already has a watermark and select it
+const rejectSecondWatermark = (): boolean => {
+  const existing = findWatermark(bands.value);
+  if (!existing) return false;
+  notification.info(t("watermark.exists"));
+  selectElement(existing.bandIndex, existing.elementIndex);
+  return true;
+};
+
+// The Background band (made when missing), as tall as the printable area
+const ensureBackgroundBand = (): number => {
+  const ctx = getFrameTemplateContext();
+  let bandIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND);
+  if (bandIndex === -1) {
+    bands.value.push({ type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType, height: ctx.availableHeight, elements: [] });
+    bandIndex = bands.value.length - 1;
+  }
+  const band = bands.value[bandIndex]!;
+  band.height = Math.max(band.height, ctx.availableHeight);
+  if (!band.elements) band.elements = [];
+  return bandIndex;
+};
+
+// Add a watermark behind the content of every page (the Background band).
+// One per template: a second click or drop selects the one there is.
+// It prints on every page (the cover too), wherever it was dropped
+const addWatermark = () => {
+  if (rejectSecondWatermark()) return;
+  saveStateToHistory();
+  const bandIndex = ensureBackgroundBand();
+  const ctx = getFrameTemplateContext();
+  const watermark = buildWatermarkElement(
+    { width: ctx.availableWidth, height: ctx.availableHeight },
+    { text: te("watermark.words.DRAFT") ? t("watermark.words.DRAFT") : "DRAFT" },
+  );
+  // First in the band: it prints behind the page border
+  const band = bands.value[bandIndex]!;
+  band.elements.unshift(watermark);
+  selectElement(bandIndex, 0);
+  handleElementCreated(watermark, bandIndex, 0);
+  updateJRXML();
+};
+
 // Page Number tile, position picked: the page header (top) or footer (bottom),
 // aligned the way the position says. Dragging the tile drops it in any band.
 const addPageNumber = (position: PaginationPosition) => {
@@ -2942,6 +3048,20 @@ const addChartFromSource = (source: ReportSourceRef) => {
 // centred, open for typing. "Use project data": the setup popup, which makes the
 // table in Detail on Apply (nothing is added when it is closed). Dragging the
 // tile drops an empty project-data table.
+// Image tile: the project's photos or a file from the computer first; the
+// picture spot is added only once a picture is chosen (like a project-data table)
+const tilePicture = ref<{ open: boolean; tab: "photos" | "computer" }>({ open: false, tab: "photos" });
+const openImageTileChooser = (from: "photos" | "computer") => {
+  tilePicture.value = { open: true, tab: from };
+};
+// Added like a click on the tile, with the picture in it: one undo step
+const addImageWithPicture = (picture: ChosenPicture) => {
+  const image = handleElementDoubleClick({ type: "image" });
+  if (image?.type !== "image") return;
+  setImagePicture(image, toImageExpression(picture.source), picture.name);
+  updateJRXML();
+};
+
 const addTable = (kind: "typed" | "data") => {
   if (kind === "data") {
     const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
@@ -3031,9 +3151,14 @@ const handlePageSetupChange = () => {
 };
 
 // A library tile clicked: add its item (where it goes depends on the kind)
-const handleElementDoubleClick = (element: any) => {
+// Returns the element added (none: refused or not added here)
+const handleElementDoubleClick = (element: any): DesignElement | undefined => {
   if (element.type === PAGE_BORDER_TYPE) {
     addPageBorder();
+    return;
+  }
+  if (element.type === WATERMARK_TYPE) {
+    addWatermark();
     return;
   }
   // A cover / contents design sets that page's design
@@ -3113,14 +3238,14 @@ const handleElementDoubleClick = (element: any) => {
 
   // Update JRXML
   updateJRXML();
-
-  console.log("Element added to band:", newElement);
+  return newElement;
 };
 
 // `place`: an element to put where the drop happened (a chart chosen for a
 // dropped project table), instead of what is being dragged
 const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string }) => {
   event.preventDefault();
+  if (readOnlyTemplate.value) return;
 
   // A source, column or project detail from the "Report Data" list
   const dataDrag = place ? null : readDataSourceDrag(event);
@@ -3232,6 +3357,12 @@ const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string
       highlightedBandIndex.value = null;
       return;
     }
+    // So does a watermark (it prints behind every page)
+    if (elementData.type === WATERMARK_TYPE) {
+      addWatermark();
+      highlightedBandIndex.value = null;
+      return;
+    }
 
     // Create the new element
     // Center it on the cursor using its own compact default size
@@ -3327,7 +3458,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string
 
       // Land on the grid, or in line with a nearby element, like a dragged one
       const dropSnap = buildSnapContext(bandIndex, targetPageIndex, undefined, newElement);
-      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event));
+      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event, dropSnap));
       newElement.x = Math.max(0, snappedDrop.x);
       newElement.y = Math.max(0, snappedDrop.y);
 
@@ -3461,7 +3592,7 @@ const handleDragOver = (event: DragEvent) => {
 
   // A page border goes to the Background band wherever it is dropped: the whole
   // printable area lights up instead of the band under the pointer
-  if (draggedLibraryElement.value?.type === PAGE_BORDER_TYPE && !isDataSourceDrag(event)) {
+  if (isBackgroundTile(draggedLibraryElement.value?.type) && !isDataSourceDrag(event)) {
     highlightedBandIndex.value = -1;
     dropTargetBlocked.value = false;
     return;
@@ -3487,7 +3618,7 @@ const handleDragOver = (event: DragEvent) => {
     (needsDetail && !!band && band.type !== BAND_TYPE_CONSTANTS.DETAIL) ||
     (!!type &&
       !!band &&
-      type !== PAGE_BORDER_TYPE &&
+      !isBackgroundTile(type) &&
       getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex));
 };
 
@@ -3899,12 +4030,20 @@ const applyChartConfig = (binding: ChartBinding) => {
 
 // A chart's numbers arrived: its picture in the JRXML is redrawn
 watch(chartDataVersion, () => updateJRXML());
-// The template's project arrived (or changed): its linked details, lists and
-// place show its values (written with the JRXML, no undo step of its own)
+// The template's project arrived (or changed): its name comes from the API
+// (the JRXML keeps only its id), and its linked details, lists and place show
+// its values (written with the JRXML, no undo step of its own)
 const templateProjectQueries = useQueries({
   queries: computed(() => reportProjects.value.slice(0, 1).map((p) => projectQuery(p.id))),
 });
-watch(() => templateProjectQueries.value[0]?.data, () => updateJRXML());
+watch(
+  () => templateProjectQueries.value[0]?.data,
+  (project) => {
+    const chosen = reportProjects.value[0];
+    if (chosen && project?.projectTitle && chosen.name !== project.projectTitle) chosen.name = project.projectTitle;
+    updateJRXML();
+  },
+);
 // Barcodes are sized once their drawing library is in
 watch(barcodeLibraryLoaded, () => updateJRXML());
 
@@ -4056,9 +4195,9 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     fontSize:
       reportProperties.value?.defaultFont?.size ||
       REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-    isBold: reportProperties.value?.defaultFont?.isBold || false,
-    isItalic: reportProperties.value?.defaultFont?.isItalic || false,
-    isUnderline: reportProperties.value?.defaultFont?.isUnderline || false,
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
   };
 
   // Calculate the available width of the report page
@@ -4153,6 +4292,8 @@ const selectElement = (
   }
 
   const uuid = element?.uuid;
+  // The watermark is edited only in its panel: show it (even from the AI tab)
+  if (isWatermark(element)) rightPanelTab.value = "properties";
   // Library tiles clicked next add to this element's page
   if (band?.type === BAND_TYPE_CONSTANTS.DETAIL) {
     const onPage = parentFrameIndex !== undefined ? band.elements[parentFrameIndex] : element;
@@ -4208,7 +4349,7 @@ const selectElement = (
 
   selectedBandIndex.value = null;
 
-  if (element && !element.box) {
+  if (element && !element.box && !isWatermark(element)) {
     initBox(element);
   }
 
@@ -4329,7 +4470,7 @@ const startDraggingInsideBox = (
   const scroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
 
   const onMove = (e: MouseEvent) => {
-    const options = getSnapOptions(e, snapContext.offset);
+    const options = getSnapOptions(e, snapContext);
     const scrolled = scroll.offset();
     const snapped = snapMove(
       {
@@ -4525,7 +4666,7 @@ const startDragging = (
               (e.clientY - draggingInfo.value.startY + scrolled.y) / currentZoom;
 
             // Snap: line up with other elements first, else the grid
-            const snapOptions = getSnapOptions(e, snapContext.offset);
+            const snapOptions = getSnapOptions(e, snapContext);
             const snapped = snapMove(
               {
                 x: (draggingInfo.value.origElementX ?? 0) + deltaX,
@@ -4844,9 +4985,12 @@ const startDragging = (
 
             // Y was snapped in the source band; snap it again to the grid of the
             // band it lands in (bands start at different heights; X is shared)
-            const landingGrid = getSnapOptions(e).grid;
+            const landingGrid = getSnapOptions(e, {
+              grid: gridStepFor(targetBandIndex, targetSheetPageIndex),
+              offset: { x: 0, y: 0 },
+            }).grid;
             if (landingGrid && !isSameBand) {
-              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid);
+              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid.y);
             }
 
             // Landing in a band (not in a box): it must fit, growing the band up
@@ -5146,44 +5290,12 @@ const startEditing = (
 // Finish editing
 const finishEditing = () => {
   editingElement.value = null;
-  // Save the data
-  saveToLocalStorageWrapper();
   updateJRXML();
 };
 
 // Cancel editing
 const cancelEditing = () => {
   editingElement.value = null;
-};
-
-// Wrapper function for the fileUtils functions
-const saveToLocalStorageWrapper = () => {
-  // Safety check to ensure reportProperties.value exists
-  if (!reportProperties.value) {
-    console.error(
-      "reportProperties.value is undefined, cannot save to local storage",
-    );
-    return;
-  }
-
-  saveToLocalStorage(
-    {
-      reportProperties: reportProperties.value,
-      bands: bands.value,
-      reportFields: reportFields.value,
-      jrxmlContent: jrxmlContent.value,
-    },
-    currentFileName.value.trim() || "report",
-  );
-};
-
-const loadFromLocalStorageWrapper = () => {
-  const loadedData = loadFromLocalStorage();
-  if (loadedData && loadedData.reportData) {
-    reportStore.loadReport(loadedData.reportData);
-    return true;
-  }
-  return false;
 };
 
 // Initialize an element's Box property: padding only. Borders are pens, written
@@ -5200,7 +5312,7 @@ const initBox = (element: DesignElement) => {
 
 // Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
 const downloadJRXML = async () => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   const content = generateJRXMLContent(
     reportStore.propertiesForJrxml(),
     bands.value,
@@ -5286,8 +5398,6 @@ defineExpose({
   bands,
   reportProperties,
   createNewFile,
-  loadFile,
-  loadFromLocalStorageWrapper,
   lastClickedBandIndex,
   handleElementDoubleClick,
   selectElement,
@@ -5311,13 +5421,18 @@ const handleBottomPanelSizeChange = (newSize: number) => {
 const updateJRXML = () => reportStore.updateJrxml();
 
 // Auto-save each JRXML the store writes, right away
-watch(() => reportStore.jrxmlVersion, () => saveToLocalStorageWrapper(), { flush: "sync" });
+// Every new JRXML: saved on the server once the changes pause
+watch(() => reportStore.jrxmlVersion, () => scheduleAutoSave(false));
 
 // Location maps: a picture drawn when a Location's place, zoom or map size
 // changed; it goes into the same undo step as that change
 const drawMaps = () => refreshLocationMaps(() => bands.value, updateJRXML);
 watch(() => reportStore.jrxmlVersion, drawMaps);
 const ensureMaps = () => ensureLocationMaps(() => bands.value, updateJRXML);
+// The watermark's printed picture: drawn again when its setup or the page size
+// changed, in the same undo step as that change
+watch(() => reportStore.jrxmlVersion, () => refreshWatermarks(() => bands.value, updateJRXML));
+const ensureWatermark = () => ensureWatermarks(() => bands.value, updateJRXML);
 
 // Copy an element to the clipboard
 const copyElement = async () => {
@@ -5553,17 +5668,18 @@ const processPastedElement = (
   if (newElement.width) newElement.width = Math.round(newElement.width);
   if (newElement.height) newElement.height = Math.round(newElement.height);
 
-  // A page border goes back to the Background band, where only one is allowed
+  // A page border or watermark goes back to the Background band, where only
+  // one of each is allowed
   if (clipboardData.sourceBandType === BAND_TYPE_CONSTANTS.BACKGROUND) {
-    if (rejectSecondPageBorder()) return;
-    const backgroundIndex = bands.value.findIndex(
-      (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
-    );
-    const background = bands.value[backgroundIndex];
-    if (!background) return;
+    const watermark = isWatermark(newElement);
+    if (watermark ? rejectSecondWatermark() : rejectSecondPageBorder()) return;
     saveStateToHistory();
-    background.elements.push(newElement);
-    selectElement(backgroundIndex, background.elements.length - 1);
+    const backgroundIndex = ensureBackgroundBand();
+    const background = bands.value[backgroundIndex]!;
+    // The watermark first: it prints behind the page border
+    if (watermark) background.elements.unshift(newElement);
+    else background.elements.push(newElement);
+    selectElement(backgroundIndex, watermark ? 0 : background.elements.length - 1);
     updateJRXML();
     return;
   }
@@ -5728,28 +5844,33 @@ const handleKeyDown = (event: KeyboardEvent) => {
   // Alt+N starts a new template (the browser keeps Ctrl+N for a new window)
   // Not while typing: on a Mac, Option+N types accents (ñ)
   const isTyping = isInputFocused || (activeEl as HTMLElement | null)?.isContentEditable;
-  if (event.altKey && !isCtrlOrMetaPressed && event.code === "KeyN" && !isTyping) {
+  // (developers only, with the File menu)
+  if (SHOW_DEVELOPER_TOOLS && event.altKey && !isCtrlOrMetaPressed && event.code === "KeyN" && !isTyping) {
     event.preventDefault();
     createNewFile();
     return;
   }
 
   // CTRL/CMD+O opens the Open window (My templates / From my computer)
-  if (isCtrlOrMetaPressed && !event.altKey && event.key.toLowerCase() === "o") {
+  // (developers only, with the File menu)
+  if (SHOW_DEVELOPER_TOOLS && isCtrlOrMetaPressed && !event.altKey && event.key.toLowerCase() === "o") {
     event.preventDefault();
     fileManagerRef.value?.showOpenWindow();
     return;
   }
 
-  // CTRL/CMD+S saves the current file
+  // A default template can only be looked at: no other shortcut acts on it
+  if (readOnlyTemplate.value) return;
+
+  // CTRL/CMD+S saves the template on the report server now
   if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
-    saveCurrentFileToStorage(true);
+    void saveNow();
     return;
   }
 
-  // CTRL/CMD+B toggles the bottom panel's visibility
-  if (isCtrlOrMetaPressed && event.key === "b") {
+  // CTRL/CMD+B toggles the bottom panel (developers only)
+  if (SHOW_DEVELOPER_TOOLS && isCtrlOrMetaPressed && event.key === "b") {
     event.preventDefault();
     toggleBottomPanel();
     return;
@@ -5974,13 +6095,15 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
       : currentBand?.elements[currentElementIndex];
 
   if (!currentBand || !currentElement) return;
+  // The watermark covers the printable area; its place is set in its panel
+  if (isWatermark(currentElement)) return;
 
   // The grid is drawn per band, so an item in a box steps to band grid lines
-  const grid = enableSnapToGrid.value ? UI_CONSTANTS.GRID_SIZE : null;
+  const grid = enableSnapToGrid.value ? gridStepFor(currentBandIndex, currentElement.pageIndex) : null;
   const offsetX = parentBox?.x ?? 0;
   const offsetY = parentBox?.y ?? 0;
-  const step = (value: number, dir: 1 | -1, offset: number) =>
-    grid ? nextGridLine(value, grid, dir, offset) : value + dir;
+  const step = (value: number, dir: 1 | -1, offset: number, axis: "x" | "y") =>
+    grid ? nextGridLine(value, grid[axis], dir, offset) : value + dir;
 
   // Calculate the new position
   let newX = currentElement.x;
@@ -5988,10 +6111,10 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 
   switch (direction) {
     case "ArrowUp":
-      newY = Math.max(0, step(currentElement.y, -1, offsetY));
+      newY = Math.max(0, step(currentElement.y, -1, offsetY, "y"));
       break;
     case "ArrowDown": {
-      const next = step(currentElement.y, 1, offsetY);
+      const next = step(currentElement.y, 1, offsetY, "y");
       // Elements in a band stay within it (box parts are kept in their box below)
       const maxDown = parentBox
         ? Infinity
@@ -6000,10 +6123,10 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
       break;
     }
     case "ArrowLeft":
-      newX = Math.max(0, step(currentElement.x, -1, offsetX));
+      newX = Math.max(0, step(currentElement.x, -1, offsetX, "x"));
       break;
     case "ArrowRight": {
-      const next = step(currentElement.x, 1, offsetX);
+      const next = step(currentElement.x, 1, offsetX, "x");
       newX = parentBox
         ? next
         : Math.min(Math.max(0, printableWidth.value - currentElement.width), next);
@@ -6029,7 +6152,6 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 
   // Trigger an update
   updateJRXML();
-  saveToLocalStorageWrapper();
 
   // Check whether it's now out of bounds
   updateOutOfBoundsElements();
@@ -6039,20 +6161,192 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 // opens it again; going back / forward to another template's address opens it
 const route = useRoute();
 const router = useRouter();
-// A template not saved yet (new and untouched) keeps /designer, so a reload
-// starts a new one instead of looking for it
-watch([currentFileId, () => filesStore.templatesVersion], ([id]) => {
-  const saved = !!id && !!findFileById(id);
-  const shown = typeof route.params.id === "string" ? route.params.id : "";
-  if (saved && shown !== id) router.replace({ name: "designer", params: { id } });
-  else if (!saved && shown) router.replace({ name: "designer" });
-});
+// One address shape: /designer/<server id> for every template on the report
+// server (default or the tenant's own), /designer for one not there yet (a
+// fresh template before its create, a .jrxml opened from the computer). A
+// browser-only id is never shown. A default template being looked at shows its
+// own id; a new template being made on the server keeps the address until its
+// id arrives
+watch(
+  [currentFileId, creatingTemplate, openedDefaultTemplate, openingDefaultTemplate],
+  ([id]) => {
+    if (creatingTemplate.value || openingDefaultTemplate.value) return;
+    const viewed = viewingDefaultTemplate.value ? openedDefaultTemplate.value?.sourceId : undefined;
+    const wanted = viewed ?? (isServerTemplateId(id) ? id : "");
+    const shown = typeof route.params.id === "string" ? route.params.id : "";
+    if (wanted && shown !== wanted) router.replace({ name: "designer", params: { id: wanted } });
+    else if (!wanted && (shown || Object.keys(route.query).length)) router.replace({ name: "designer" });
+  },
+  { deep: true },
+);
+
+// Whether the designer's parser reads this JRXML without failing
+function canParseJrxml(text: string): boolean {
+  try {
+    parseJRXMLContent(text);
+    return true;
+  } catch (error) {
+    console.error("The server template's JRXML can't be read:", error);
+    return false;
+  }
+}
+
+// A template just made (Create template, File → New) takes the user's
+// Default Settings as they are now (read again from the server first,
+// refreshFromServer): paper, margins, font, page sections, section heights and
+// their limits. Whatever the server's create put in it is kept; its content
+// is refitted to the page. No undo step (the template has just opened)
+function giveTemplateUserDefaults(): void {
+  const defaults = loadReportDefaults();
+  const page = reportProperties.value;
+  page.pageWidth = defaults.pageWidth;
+  page.pageHeight = defaults.pageHeight;
+  page.orientation = defaults.pageWidth > defaults.pageHeight ? "landscape" : "portrait";
+  page.leftMargin = defaults.leftMargin;
+  page.rightMargin = defaults.rightMargin;
+  page.topMargin = defaults.topMargin;
+  page.bottomMargin = defaults.bottomMargin;
+  page.defaultFont = { ...defaults.font };
+  page.bandLimits = getEffectiveDefaultBandLimits();
+  reportStore.setBandTypes(defaults.bandTypes, { record: false });
+  const config = getEffectiveDefaultBandConfig();
+  for (const band of bands.value) {
+    if (band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND) continue;
+    const height = config[band.type]?.defaultHeight;
+    if (typeof height === "number") band.height = height;
+  }
+  // Detail takes the rest of the page; the content is refitted (JRXML written)
+  handlePageSetupChange();
+}
+
+// The JRXML of an empty template with the user's default settings
+function emptyTemplateJrxml(): string {
+  reportStore.loadReport({});
+  reportStore.updateJrxml();
+  return reportStore.jrxmlContent;
+}
+
+// Duplicate in the designer's bar: the server copies the template being
+// looked at (POST /v2/reports/copy); the copy shows up in Templates
+const copyTemplate = useCopyTemplate();
+// The copy just made: asked whether to open it (OpenCopy popup)
+const madeCopy = ref<{ id: string; name: string } | null>(null);
+const openCopyDialog = ref(false);
+function duplicateOpenedTemplate(): void {
+  const opened = openedDefaultTemplate.value;
+  if (!opened?.sourceId) return;
+  copyTemplate.mutate(opened.sourceId, {
+    onSuccess: async (answer) => {
+      const id = answer?.id ?? (await fetchNewestCopyId(opened.name).catch(() => null));
+      if (!id) {
+        notification.success(t("reportCatalog.copy.done", { name: opened.name }));
+        return;
+      }
+      madeCopy.value = { id, name: answer?.report?.name || opened.name };
+      openCopyDialog.value = true;
+    },
+    onError: async (error) =>
+      notification.error(
+        t("reportCatalog.copy.failed", {
+          reason: await reportServerErrorText(error, t("reportCatalog.defaultTemplates.errors.unknown")),
+        }),
+      ),
+  });
+}
+
+// Opens a server template (default or the tenant's own) from the report
+// server, always (GET …/rptadn_TenantReport/{id}?fetchPlan=…): its content's
+// JRXML, else an empty layout with a warning. A default stays read only; one of
+// the tenant's own keeps the server's id. Fails with a message, leaving the
+// template that was open
+let openingTemplateId = "";
+async function openDefaultTemplate(id: string): Promise<void> {
+  // Asked twice for the same template (mount and address): opened once
+  if (openingDefaultTemplate.value && openingTemplateId === id) return;
+  openingTemplateId = id;
+  openingDefaultTemplate.value = true;
+  try {
+    // A template just made here takes the user's newest Default Settings
+    const madeHere = newServerTemplateIds.has(id);
+    const [template] = await Promise.all([
+      fetchDefaultTemplate(id),
+      madeHere ? userSettings.refreshFromServer() : Promise.resolve(),
+    ]);
+    // The user went elsewhere meanwhile
+    if (route.params.id !== id) return;
+    // Opened only once the designer's own start is done
+    if (isLoadingFile.value) {
+      await new Promise<void>((resolve) => {
+        const stop = watch(isLoadingFile, (loading) => {
+          if (loading) return;
+          stop();
+          resolve();
+        });
+      });
+    }
+    // The template that was open keeps its last changes first
+    flushAutoSave();
+    // A .jrxml from the computer just made into this template opens with
+    // its JRXML (held in memory until now) instead of the create's content
+    const uploaded = !template.isDefault && uploadedJrxml?.id === id ? uploadedJrxml.jrxml : null;
+    uploadedJrxml = null;
+    openedTemplateName = template.name;
+    savedTemplateId = "";
+    saveAnywayId = "";
+    templateReportId = template.reportId ?? "";
+    templateReportParameters = template.reportParameters ?? [];
+    openedWithoutJrxml = false;
+    serverSave.startTemplate();
+    if (uploaded) {
+      applyJrxml(uploaded, template.name, "server", id);
+      // Saved on the server at once (below), so the server holds the JRXML
+      newServerTemplateIds.delete(id);
+      saveAnywayId = id;
+    } else {
+      // Content that isn't a JRXML the designer can open (none, an HTML
+      // template, a damaged JRXML): an empty layout, with a warning saying why
+      const problem = template.problem ?? (canParseJrxml(template.jrxml) ? undefined : TemplateContentProblem.badJrxml);
+      openedWithoutJrxml = !!problem;
+      // A template just made here holds the create's own template, not a JRXML
+      const isNew = madeHere && problem !== TemplateContentProblem.badJrxml;
+      const warning = problem && !isNew
+        ? { type: "warning" as const, text: t(`reportCatalog.defaultTemplates.contentProblems.${problem}`, { name: template.name }) }
+        : undefined;
+      applyJrxml(
+        problem ? emptyTemplateJrxml() : template.jrxml,
+        template.name,
+        template.isDefault ? "default" : "server",
+        id,
+        warning,
+      );
+      // Its Template Settings = the user's Default Settings now (only once:
+      // opened again, it keeps what it was saved with)
+      if (madeHere && !template.isDefault) {
+        newServerTemplateIds.delete(id);
+        giveTemplateUserDefaults();
+        saveAnywayId = id;
+      }
+    }
+    // Saved on the server at once, so the template holds those settings
+    if (saveAnywayId === id) void serverSave.flush();
+  } catch (error) {
+    console.error("Failed to open the default template:", error);
+    const unknown = t("reportCatalog.defaultTemplates.errors.unknown");
+    const reason =
+      error instanceof ApiError ? await reportServerErrorText(error, error.response?.statusText || unknown) : unknown;
+    // The address keeps the template's id, so a refresh tries again
+    notification.error(t("reportCatalog.defaultTemplates.openFailed", { reason }));
+  } finally {
+    openingDefaultTemplate.value = false;
+  }
+}
 watch(
   () => route.params.id,
   (id) => {
     if (typeof id !== "string" || !id || id === currentFileId.value) return;
-    const file = findFileById(id);
-    if (file) loadFile(file);
+    if (id === openedDefaultTemplate.value?.sourceId) return;
+    // Always read from the server, so its latest content is what opens
+    if (isServerTemplateId(id)) void openDefaultTemplate(id);
   },
 );
 
@@ -6061,22 +6355,18 @@ onMounted(() => {
   // The project list, so the header's picker has it before it is opened
   prefetchProjects();
   isLoadingFile.value = true;
-  console.log("Component mount started...");
-  loadFromLocalStorageWrapper();
-  console.log("Local data load complete");
-
-  // /designer/<id> opens that template; /designer starts a new one
-  loadFilesFromStorage();
+  // /designer/<id>: that template, always read from the report server
+  // (default or the tenant's own; its changes kept in this browser come back);
+  // /designer: a new template made on the server at once (Create template),
+  // then opened at /designer/<id>
   const routeId = typeof route.params.id === "string" ? route.params.id : "";
-  const requested = routeId ? findFileById(routeId) : undefined;
-  if (routeId && !requested) notification.warning(t("fileManager.templateNotFound"));
-  if (requested) {
-    loadFile(requested);
-  } else {
-    // A fresh template: a name no template saved in this browser has
-    currentFileId.value = `file_${Date.now()}`;
-    currentFileName.value = filesStore.newReportName(t("fileManager.untitledReport"));
-    reportStore.loadReport({});
+  currentFileId.value = newLocalTemplateId();
+  currentFileName.value = t("fileManager.untitledReport");
+  reportStore.loadReport({});
+  if (isServerTemplateId(routeId)) void openDefaultTemplate(routeId);
+  else {
+    if (routeId) notification.warning(t("fileManager.templateNotFound"));
+    void createAndOpenServerTemplate(t("fileManager.untitledReport"));
   }
 
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
@@ -6120,13 +6410,15 @@ onMounted(() => {
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
 
-  window.addEventListener("beforeunload", flushAutoSave);
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
   flushAutoSave();
-  window.removeEventListener("beforeunload", flushAutoSave);
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
 
   // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
@@ -6203,61 +6495,100 @@ const openPdfPreview = (): void => {
   });
 };
 
-// The JRXML the preview sends: charts drawn with their numbers, barcodes sized,
-// maps drawn and the template's project read first (a failure is shown in the popup)
-const prepareReportForPreview = async (): Promise<string> => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+// What Preview PDF (and the AI's check_pdf) runs: the template made ready
+// (charts drawn with their numbers, barcodes sized, maps drawn, the project
+// read), saved on the report server (the run uses the saved template), and
+// its Jmix report. A default template is only run (read only). A failure is
+// shown in the popup
+const prepareReportForPreview = async (): Promise<TemplatePdfRun> => {
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   updateJRXML();
-  if (!jrxmlContent.value) {
-    jrxmlContent.value = generateJRXMLContent(
-      reportStore.propertiesForJrxml(),
-      bands.value,
-      reportFields.value,
-      reportParameters.value,
-      subDatasets.value,
-      tableStyles.value,
-      reportVariables.value,
-      [],
-      reportGroups.value,
-      totalPages.value,
-    );
+  const reportId = templateReportId;
+  if (!reportId) throw new Error(t("pdfPreview.errors.notOnServer"));
+  if (!readOnlyTemplate.value) {
+    const id = currentFileId.value;
+    if (!isServerTemplateId(id)) throw new Error(t("pdfPreview.errors.notOnServer"));
+    // The server holds no JRXML for it yet: this one is sent even unchanged
+    if (openedWithoutJrxml) saveAnywayId = id;
+    if (!(await serverSave.flush())) throw new Error(t("pdfPreview.errors.notSaved"));
+    openedWithoutJrxml = false;
   }
-  return jrxmlContent.value;
+  return { reportId, parameters: templateReportParameters, projectId: reportProjects.value[0]?.id };
 };
 
 // Save the edited JRXML content
-const saveJRXML = (): void => applyJrxml(jrxmlContent.value);
+// Edited JRXML applied (developer panel); never onto a default template
+const saveJRXML = (): void => {
+  if (readOnlyTemplate.value) {
+    notification.info(t("reportCatalog.defaultTemplates.readOnly"));
+    return;
+  }
+  applyJrxml(jrxmlContent.value);
+};
 
-// Open a .jrxml file from the computer as a new report (File → Open)
-const openJrxmlFile = (file: { name: string; content: string }): void =>
-  applyJrxml(file.content, file.name.replace(/\.jrxml$/i, ""));
+// File → Open, From my computer: the .jrxml becomes a template on the report
+// server under its file's name, opens at /designer/<id> with that JRXML and is
+// saved there at once
+const openJrxmlFile = (file: { name: string; content: string }): void => {
+  if (!canParseJrxml(file.content)) {
+    notification.error(t("fileManager.invalidFileFormat"));
+    return;
+  }
+  const name = file.name.replace(/\.jrxml$/i, "").trim().slice(0, TEMPLATE_NAME_MAX_LENGTH).trim();
+  flushAutoSave();
+  void createAndOpenServerTemplate(name || t("fileManager.untitledReport"), file.content);
+};
 
 // Turn JRXML text into the report. Without a file name it is the edited JRXML
 // of this report (one undo step); with one it opens as a new report
-const applyJrxml = (text: string, openedFileName?: string): void => {
+// `from`: a default template looked at (kept off the list until changed) or cloned (saved at once)
+// from: "default" / "server" = a report server template (default or the tenant's own) looked at
+// `notice`: shown instead of the "opened" message (a server template opened
+// as an empty layout, or with its changes kept in this browser)
+const applyJrxml = (
+  text: string,
+  openedFileName?: string,
+  from?: "default" | "server",
+  serverId?: string,
+  notice?: { type: "warning" | "info"; text: string },
+): void => {
   try {
     // Use our parseJRXMLContent function to parse the JRXML content
     const parsedData = parseJRXMLContent(text);
 
     if (openedFileName !== undefined) {
       // Keep the report that was open, then start a new one: no undo history
+      // (an opened file or server template: never made on the server as new)
       flushAutoSave();
       currentFileName.value =
         openedFileName.trim() || t("fileManager.untitledReport");
-      currentFileId.value = `file_${Date.now()}`;
+      // One of the tenant's own server templates is the user's: it keeps the
+      // server's id (saved in this browser at its first change). A default
+      // template is only looked at under a browser id until it is changed
+      currentFileId.value = from === "server" && serverId ? serverId : newLocalTemplateId();
+      openedDefaultTemplate.value =
+        from === "default"
+          ? { fileId: currentFileId.value, name: currentFileName.value, isDefault: true, sourceId: serverId }
+          : null;
     } else {
       // The edited JRXML replaces the whole report: one undo step. Every part
-      // is set from it (what it lacks is emptied); the default font and band
-      // limits aren't in JRXML and stay
+      // is set from it (what it lacks is emptied)
       saveStateToHistory();
     }
+    // The font and section limits come from the JRXML (com.cdp.font /
+    // com.cdp.sectionLimits); one without them (another tool's) takes, when
+    // opened, the Default Settings (loadReport), and when edited, keeps what
+    // the template had
+    const before = openedFileName === undefined ? reportProperties.value : undefined;
+    const parsedFont = parsedData.properties?.defaultFont;
+    const fontBase = before?.defaultFont ?? { ...loadReportDefaults().font };
     reportStore.loadReport(
       {
         reportProperties: {
           ...parsedData.properties,
           orientation: parsedData.properties?.orientation === "landscape" ? "landscape" : "portrait",
-          defaultFont: reportProperties.value?.defaultFont,
-          bandLimits: reportProperties.value?.bandLimits,
+          defaultFont: parsedFont ? { ...fontBase, ...parsedFont } : fontBase,
+          bandLimits: { ...(before?.bandLimits ?? {}), ...(parsedData.properties?.bandLimits ?? {}) },
         } as any,
         bands: parsedData.bands,
         reportFields: parsedData.fields,
@@ -6567,16 +6898,13 @@ const applyJrxml = (text: string, openedFileName?: string): void => {
     updateJRXML();
 
     if (openedFileName !== undefined) {
-      // Kept in the browser's file list like any other report
-      saveCurrentFileToStorage(false);
-      notification.success(
-        t("fileManager.jrxmlOpened", { name: currentFileName.value }),
-      );
+      // Nothing is saved until it is changed
+      saveStatus.value = "saved";
+      if (notice) notification[notice.type](notice.text);
+      else if (from === "default") notification.info(t("reportCatalog.defaultTemplates.opened"));
+      else notification.success(t("fileManager.jrxmlOpened", { name: currentFileName.value }));
       return;
     }
-
-    // Save to local storage
-    saveToLocalStorageWrapper();
 
     // Show a success notification
     notification.success(t("notifications.jrxmlEditSaved"));
@@ -7239,20 +7567,27 @@ const startResizingElement = (
       startLineDirection: (element as any).lineDirection || "TopDown",
     };
 
-    // A frame's children are re-laid out from these start positions while resizing
-    const frameChildrenStart =
-      element.type === "frame"
-        ? ((element as FrameElement).elements ?? []).map(
-            ({ x, y, width, height }) => ({ x, y, width, height }),
-          )
-        : null;
-    const frameStartSize = { width: element.width, height: element.height };
+    // A frame's children are re-laid out from these start positions while
+    // resizing (kept from the resizes before, so they never get squeezed for
+    // good), and the frame can't get smaller than its items need
+    const frameFitStart = element.type === "frame" ? frameFitReference(element as FrameElement) : null;
+    const frameMinSize = frameFitStart
+      ? (() => {
+          const min = frameMinimumSize(frameFitStart.children, frameFitStart.from);
+          // Never above the size it has now (a tight box doesn't jump)
+          return { width: Math.min(min.width, element.width), height: Math.min(min.height, element.height) };
+        })()
+      : null;
     // A custom table's columns and rows keep their shares while it is resized
     // A project-data table's heading and rows grow from their start sizes
     const dataTableStart =
       element.type === "table" && (element as TableElement).binding
         ? ({ ...(element as TableElement) } as TableElement)
         : null;
+    // Its columns as the drag began (copied: the binding object is shared)
+    const dataColumnsStart = dataTableStart?.binding
+      ? dataTableStart.binding.columns.map((c) => ({ ...c }))
+      : null;
     const customTableStart =
       element.type === "customTable"
         ? {
@@ -7364,7 +7699,7 @@ const startResizingElement = (
 
       // Moving edges snap to other elements, else the grid. Aspect-locked
       // resizes (Shift, Alt) follow the mouse instead.
-      const snapOptions = getSnapOptions(e, snapContext.offset);
+      const snapOptions = getSnapOptions(e, snapContext);
       const snapGuides: SnapGuides = { x: [], y: [] };
       const snapResizeEdge = (value: number, axis: "x" | "y") => {
         if (e.shiftKey || e.altKey) return value;
@@ -7461,6 +7796,16 @@ const startResizingElement = (
       }
 
       const minSize = element.type === "line" ? 1 : 5;
+      // Smallest width / height: a box what its items need, a contents list
+      // its number and page columns (narrower, its titles vanish)
+      const minWidth = Math.max(
+        minSize,
+        frameMinSize?.width ?? 0,
+        element.type === "contentsList"
+          ? Math.min(startWidth, minContentsListWidth((element as ContentsListElement).list))
+          : 0,
+      );
+      const minHeight = Math.max(minSize, frameMinSize?.height ?? 0);
 
       let newX = startElementX;
       let newY = startElementY;
@@ -7472,14 +7817,14 @@ const startResizingElement = (
         // Dragging right edge: left edge (newX) is fixed at startElementX
         const maxRight = containerWidth;
         const candidateRight = snapResizeEdge(startElementX + startWidth + deltaX, "x");
-        const clampedRight = Math.min(maxRight, Math.max(startElementX + minSize, candidateRight));
+        const clampedRight = Math.min(maxRight, Math.max(startElementX + minWidth, candidateRight));
         newWidth = clampedRight - startElementX;
         newX = startElementX;
       } else if (dir.includes("w")) {
         // Dragging left edge: right edge is fixed at (startElementX + startWidth)
         const rightEdge = startElementX + startWidth;
         const candidateLeft = snapResizeEdge(startElementX + deltaX, "x");
-        const clampedLeft = Math.max(0, Math.min(rightEdge - minSize, candidateLeft));
+        const clampedLeft = Math.max(0, Math.min(rightEdge - minWidth, candidateLeft));
         newX = clampedLeft;
         newWidth = rightEdge - clampedLeft;
       }
@@ -7489,14 +7834,14 @@ const startResizingElement = (
         // Dragging bottom edge: top edge (newY) is fixed at startElementY
         const maxBottom = containerHeight;
         const candidateBottom = snapResizeEdge(startElementY + startHeight + deltaY, "y");
-        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minSize, candidateBottom));
+        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minHeight, candidateBottom));
         newHeight = clampedBottom - startElementY;
         newY = startElementY;
       } else if (dir.includes("n")) {
         // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
         const bottomEdge = startElementY + startHeight;
         const candidateTop = snapResizeEdge(startElementY + deltaY, "y");
-        const clampedTop = Math.max(0, Math.min(bottomEdge - minSize, candidateTop));
+        const clampedTop = Math.max(0, Math.min(bottomEdge - minHeight, candidateTop));
         newY = clampedTop;
         newHeight = bottomEdge - clampedTop;
       }
@@ -7571,6 +7916,16 @@ const startResizingElement = (
         }
       }
 
+      // Shift / Alt may have made it smaller than its content allows
+      if (newWidth < minWidth) {
+        if (dir.includes("w")) newX = startElementX + startWidth - minWidth;
+        newWidth = minWidth;
+      }
+      if (newHeight < minHeight) {
+        if (dir.includes("n")) newY = startElementY + startHeight - minHeight;
+        newHeight = minHeight;
+      }
+
       // First, store the temporary size and position
       const tempWidth = Math.round(newWidth);
       const tempHeight = Math.round(newHeight);
@@ -7591,7 +7946,10 @@ const startResizingElement = (
           table.rowHeight = sizes.rowHeight;
         }
         const height = sizes ? sizes.height : snapTableHeight(table, tempHeight);
-        if (table.binding) table.binding.columns = scaleColumnWidths(table.binding.columns, width);
+        // Always from the columns as the drag began, so their shares stay exact
+        if (table.binding && dataColumnsStart) {
+          table.binding.columns = scaleColumnWidths(dataColumnsStart, width);
+        }
         element.width = width;
         element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
         element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
@@ -7611,8 +7969,12 @@ const startResizingElement = (
           element.height = Math.round(Math.max(list.rowHeight, Math.min(pageBottom, bottom) - top));
           syncFollowingLists(bands.value, reportProperties.value);
         } else {
-          // Elsewhere taller or shorter spreads or tightens the rows
-          list.rowHeight = Math.min(80, Math.max(12, Math.round(tempHeight / Math.max(1, list.entries.length))));
+          // Elsewhere taller or shorter spreads or tightens the rows shown (a
+          // row never shorter than one line of its text)
+          list.rowHeight = Math.min(
+            80,
+            Math.max(12, minContentsRowHeight(list), Math.round(tempHeight / Math.max(1, shownCount(list)))),
+          );
           syncContentsListSize(element as ContentsListElement);
           element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
         }
@@ -7644,15 +8006,8 @@ const startResizingElement = (
       }
 
       // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
-      if (frameChildrenStart && element.type === "frame") {
-        const fitted = fitChildrenToFrame(frameChildrenStart, frameStartSize, {
-          width: element.width,
-          height: element.height,
-        });
-        (element as FrameElement).elements?.forEach((child, i) => {
-          const rect = fitted[i];
-          if (rect) Object.assign(child, rect);
-        });
+      if (frameFitStart && element.type === "frame") {
+        fitFrameContent(element as FrameElement, frameFitStart);
       }
 
       showSnapGuides(snapContext, snapGuides, snapOptions);
@@ -7833,6 +8188,7 @@ onUnmounted(() => {
 // The right panel, opened on the AI tab (a guide's "Or let the AI assistant do it")
 const rightPanelRef = ref<{ toggleCollapse: () => void } | null>(null);
 function openAIAssistant() {
+  if (!SHOW_AI_ASSISTANT) return;
   showRightPanel.value = true;
   if (rightPanelCollapsed.value) rightPanelRef.value?.toggleCollapse();
   rightPanelTab.value = "ai";
@@ -8202,6 +8558,7 @@ const handleElementContextMenu = (
 ): void => {
   event.preventDefault();
   event.stopPropagation();
+  if (readOnlyTemplate.value) return;
   // Right-clicking one of several selected items keeps them all selected, so
   // the menu's Delete, Bring to Front, Send to Back and Reset style act on all
   const inSelection = selectedElements.value.some(
@@ -8512,6 +8869,15 @@ const moveElementZOrder = (direction: "front" | "back") => {
   border: 1px solid rgba(28, 27, 38, 0.05);
 }
 
+/* Only the Settings tab (the AI Assistant hidden on staging / production) */
+.right-panel-seg.is-single {
+  grid-template-columns: 1fr;
+}
+
+.right-panel-seg.is-single .right-panel-indicator {
+  width: calc(100% - 6px);
+}
+
 .right-panel-indicator {
   position: absolute;
   top: 3px;
@@ -8725,19 +9091,39 @@ const moveElementZOrder = (direction: "front" | "back") => {
   box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
+/* Every state in one grid cell: the badge is as wide as the widest (the
+   hidden .save-sizer copies), the shown one sits at its start */
 .auto-save-badge {
-  display: inline-flex;
+  display: inline-grid;
   flex-shrink: 0;
   align-items: center;
+  justify-items: start;
   margin-left: 4px;
   font-size: 11px;
   user-select: none;
+}
+
+.auto-save-badge > * {
+  grid-area: 1 / 1;
+}
+
+.save-sizer {
+  visibility: hidden;
+  pointer-events: none;
+  border: 1px solid transparent;
+}
+
+.save-sizer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .save-status-text {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
   padding: 3px 7px;
   border-radius: 999px;
   font-weight: 600;
@@ -8760,6 +9146,18 @@ const moveElementZOrder = (direction: "front" | "back") => {
 .save-status-text.error {
   color: #dc2626;
   background-color: rgba(220, 38, 38, 0.1);
+}
+.save-retry {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.save-retry:hover {
+  background-color: rgba(220, 38, 38, 0.16);
+}
+.save-retry:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 1px;
 }
 
 .saved-icon {
@@ -8791,7 +9189,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 /* Default Settings open: tinted purple */
-.default-settings-btn.is-open {
+.developer-panel-btn.is-open {
   background: rgba(124, 92, 247, 0.12);
   color: #6440f4;
 }
@@ -8997,6 +9395,98 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 /* Right-click context menu */
+/* A default template being looked at: a slim bar above the pages */
+/* A default template: only looked at. The page can't be clicked (the wheel
+   still scrolls it), editing tools are faded and off, settings are shown but
+   can't be changed (the fieldset turns its native fields off; the rest takes
+   no clicks), the panel still scrolls */
+.read-only-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.is-read-only :deep(.page-sheet-wrapper) {
+  pointer-events: none;
+}
+.is-read-only .read-only-lockable,
+.is-read-only .header-project-picker,
+.is-read-only .header-undo-redo,
+.is-read-only .header-toolbar-ops {
+  opacity: 0.45;
+}
+.is-read-only .read-only-fieldset :deep(:is(input, select, textarea, button, label, [role="button"], [role="switch"], [role="radio"], [role="checkbox"], .n-color-picker, .n-base-selection, .n-input, .n-slider, .n-switch, .n-button)) {
+  pointer-events: none;
+}
+.is-read-only .read-only-fieldset :deep(:is(input, select, textarea)) {
+  opacity: 0.7;
+}
+
+.default-template-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #e6e5ee;
+  background: #f6f4ff;
+  color: #45425a;
+  font-size: 12px;
+}
+.default-template-bar > svg {
+  flex: none;
+  color: #6440f4;
+}
+.default-template-bar span {
+  flex: 1;
+  min-width: 0;
+}
+.default-template-bar strong {
+  color: #1c1b26;
+  margin-right: 4px;
+}
+.default-template-bar button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #6440f4;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.default-template-bar button:hover {
+  background: #5530e0;
+}
+/* A default template's file is being fetched: a skeleton page over the canvas */
+.opening-template {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(246, 245, 250, 0.86);
+  color: #6e6a80;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.opening-template-page {
+  display: grid;
+  gap: 12px;
+  width: min(320px, 70%);
+  padding: 26px 24px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(23, 20, 44, 0.08);
+}
 .context-menu-overlay {
   position: fixed;
   top: 0;

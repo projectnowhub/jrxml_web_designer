@@ -94,6 +94,18 @@ export function syncContentsListSize(element: ContentsListElement): void {
     : Math.max(1, entries.filter((e) => isRowShown(element.list, e)).length) * rowHeight;
 }
 
+// Room a title keeps when the list is made narrower
+const MIN_TITLE_WIDTH = 40;
+
+// The narrowest a list may be made: its number and page columns, the indent
+// of a sub-section and some room for the title (narrower, the titles vanish
+// and the JRXML would get a negative width)
+export const minContentsListWidth = (list: ContentsListData): number =>
+  2 * SIDE_PAD + list.numberWidth + SUB_INDENT + list.pageWidth + MIN_TITLE_WIDTH;
+
+// The shortest a row may be made: one line of its text
+export const minContentsRowHeight = (list: ContentsListData): number => titleLineHeight(list.fontSize);
+
 // Rows that fit in a height
 export const rowsThatFit = (list: ContentsListData, height: number) =>
   Math.max(1, Math.floor(height / list.rowHeight));

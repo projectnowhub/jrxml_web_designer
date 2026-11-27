@@ -1,5 +1,5 @@
-// Template list types (home page, My Templates; services/templateService.ts):
-// the planned templates API's request and answer.
+// Template types: the report server's templates as the Templates page's cards
+// and list show them (templates are kept only on the server).
 
 export type TemplateSort = "lastModified" | "createdAt" | "name";
 export type TemplateSortDirection = "asc" | "desc";
@@ -11,20 +11,9 @@ export interface TemplateSummary {
   lastModified: string;
 }
 
-export interface TemplatePage {
-  items: TemplateSummary[];
-  total: number;
+// A template as the cards and the list show it: its owner when it names one
+// (its creator on the report server), else the list's own
+export interface TemplateCard extends TemplateSummary {
+  owner?: string;
 }
 
-export interface TemplateQuery {
-  page?: number;
-  size?: number;
-  q?: string;
-  sort?: TemplateSort;
-  dir?: TemplateSortDirection;
-}
-
-// GET rest/reports/report (services/home/homeServices.ts)
-export interface ReportVerifyResponse {
-  isVerified?: boolean;
-}

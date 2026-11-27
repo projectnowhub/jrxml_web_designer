@@ -127,7 +127,11 @@
                 transform: `scale(${zoomLevel})`,
                 transformOrigin: 'top left',
               }"
-              :class="{ focused: isDesignAreaFocused, [`is-${kindOf(pIndex - 1)}-page`]: isSpecial(pIndex - 1) }"
+              :class="{
+                focused: isDesignAreaFocused,
+                [`is-${kindOf(pIndex - 1)}-page`]: isSpecial(pIndex - 1),
+                'is-watermark-focus': watermarkSelected && showsWatermark(pIndex - 1),
+              }"
               @drop="handleDrop($event, pIndex - 1)"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
@@ -185,6 +189,7 @@
                   <button
                     type="button"
                     class="page-menu-btn"
+                    :data-help="pIndex === 1 ? 'page-menu' : undefined"
                     :class="{ 'is-open': openPageMenu === pIndex - 1 }"
                     :title="t('specialPages.pageOptions')"
                     :aria-label="t('specialPages.pageOptions')"
@@ -203,6 +208,7 @@
                       role="menuitem"
                       class="page-menu-item"
                       :class="{ 'is-danger': item.danger }"
+                      :data-help="item.action === 'watermark' ? 'page-menu-watermark' : undefined"
                       @click.stop="runPageAction(item.action, pIndex - 1)"
                     >
                       <component :is="item.icon" :size="14" aria-hidden="true" />
@@ -232,6 +238,17 @@
                   position: 'relative',
                 }"
               >
+                <!-- The watermark, behind this page's content (first, so the sections
+                     and what fills them are drawn over it, as in the PDF) -->
+                <WatermarkLayer
+                  v-if="watermark && showsWatermark(pIndex - 1)"
+                  :element="watermark"
+                  :top="reportProperties.topMargin || 0"
+                  :left="reportProperties.leftMargin || 0"
+                  :zoom="zoomLevel"
+                  :selected="watermarkSelected"
+                  :raised="watermarkSelected"
+                />
                 <!-- A contents page without a Table of Contents: offer to add one
                      (designer only; never printed) -->
                 <div v-if="contentsPageWithoutToc(pIndex - 1)" class="no-toc-prompt">
@@ -330,11 +347,6 @@
                         :is-dragging="isDraggingOrResizing"
                         :report-font-family="reportProperties.defaultFont?.name"
                         :report-font-size="reportProperties.defaultFont?.size"
-                        :report-is-bold="reportProperties.defaultFont?.isBold"
-                        :report-is-italic="reportProperties.defaultFont?.isItalic"
-                        :report-is-underline="
-                          reportProperties.defaultFont?.isUnderline
-                        "
                         :is-out-of-bounds="
                           isElementOutOfBounds(bItem.bandIndex, originalIndex)
                         "
@@ -395,11 +407,6 @@
                         :is-dragging="isDraggingOrResizing"
                         :report-font-family="reportProperties.defaultFont?.name"
                         :report-font-size="reportProperties.defaultFont?.size"
-                        :report-is-bold="reportProperties.defaultFont?.isBold"
-                        :report-is-italic="reportProperties.defaultFont?.isItalic"
-                        :report-is-underline="
-                          reportProperties.defaultFont?.isUnderline
-                        "
                         :is-out-of-bounds="
                           isElementOutOfBounds(bItem.bandIndex, index)
                         "
@@ -436,7 +443,7 @@
                      background while lines still show. Not interactive on the canvas; select
                      its elements from Report Elements. -->
                 <div
-                  v-if="backgroundElements.length > 0 && !isSheetPage(pIndex - 1)"
+                  v-if="backgroundItems.length > 0 && !isSheetPage(pIndex - 1)"
                   class="background-band-layer"
                   :style="{
                     top: (reportProperties.topMargin || 0) + 'px',
@@ -446,7 +453,7 @@
                   }"
                 >
                   <ElementFactory
-                    v-for="(item, index) in backgroundElements"
+                    v-for="{ item, index } in backgroundItems"
                     :key="`page-${pIndex}-background-${item.uuid || index}`"
                     :element="item"
                     :band-index="backgroundBandIndex"
@@ -457,9 +464,6 @@
                     :is-dragging="false"
                     :report-font-family="reportProperties.defaultFont?.name"
                     :report-font-size="reportProperties.defaultFont?.size"
-                    :report-is-bold="reportProperties.defaultFont?.isBold"
-                    :report-is-italic="reportProperties.defaultFont?.isItalic"
-                    :report-is-underline="reportProperties.defaultFont?.isUnderline"
                     :is-out-of-bounds="false"
                     :zoom-level="zoomLevel"
                     :page-number="pIndex"
@@ -468,7 +472,7 @@
                   <!-- Thin clickable strips along each edge, so a page border can be
                        selected on the canvas while its inside stays click-through -->
                   <template
-                    v-for="(item, index) in backgroundElements"
+                    v-for="{ item, index } in backgroundItems"
                     :key="`page-${pIndex}-background-hit-${item.uuid || index}`"
                   >
                     <div
@@ -537,6 +541,7 @@ import {
   LayoutTemplate,
   MousePointerClick,
   Shrink,
+  Stamp,
   Plus,
   TableOfContents,
   Trash2,
@@ -545,11 +550,13 @@ import { pageKind, specialPageArea } from "@/utils/specialPages";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
 import DragFeedbackLayer from "./DragFeedbackLayer.vue";
+import WatermarkLayer from "./WatermarkLayer.vue";
+import { findWatermark, getWatermarkSetup, isWatermark, watermarkOnPage } from "@/utils/watermark/watermarkElement";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
 import { buildGridPath } from "@/utils/rulerUtils";
 import { startDragScrolling, type DragScrollSession } from "@/utils/dragAutoScroll";
-import type { Band } from "@/types";
+import type { Band, ImageElement } from "@/types";
 import type { DragFeedback } from "@/composables/useDragFeedback";
 import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
 import { useI18n } from "vue-i18n";
@@ -655,6 +662,31 @@ const backgroundBandIndex = computed(() =>
 const backgroundElements = computed(
   () => bands.value[backgroundBandIndex.value]?.elements ?? [],
 );
+// What the background layer draws (the page border): every background item but
+// the watermark, which has its own layer behind the content; index = its place in the band
+const backgroundItems = computed(() =>
+  backgroundElements.value
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !isWatermark(item)),
+);
+
+// The watermark: drawn behind the content of the pages it prints on
+const watermarkAt = computed(() => findWatermark(bands.value));
+const watermark = computed(() => {
+  const at = watermarkAt.value;
+  return at ? (bands.value[at.bandIndex]!.elements[at.elementIndex] as ImageElement) : null;
+});
+// On a whole-sheet cover too: the layer sits at the printable area, as the
+// Background band prints there
+const showsWatermark = (pageIndex: number) =>
+  !!watermark.value &&
+  watermarkOnPage(getWatermarkSetup(watermark.value), reportProperties.value, pageIndex);
+const watermarkSelected = computed(() => {
+  const at = watermarkAt.value;
+  const sel = selectedElement.value;
+  return !!at && !!sel && sel.parentFrameIndex === undefined && sel.bandIndex === at.bandIndex && sel.elementIndex === at.elementIndex;
+});
+
 
 // Click targets for background elements: a strip centred on each edge
 const EDGE_SIDES = ["top", "right", "bottom", "left"] as const;
@@ -747,6 +779,7 @@ type PageAction =
   | "addToc"
   | "wholeSheet"
   | "keepMargins"
+  | "watermark"
   | "delete";
 // Each page's toolbar keeps its size when zoomed in, shrinks with the page
 // when zoomed out (to 75% at most), and shows icons only on a narrow page
@@ -781,6 +814,15 @@ function pageMenuItems(pageIdx: number) {
     if (pageIdx === count - 1) items.push({ action: "contentsToNormal", labelKey: "specialPages.toNormal", icon: FileText });
     items.push({ action: "delete", labelKey: "specialPages.deleteContents", icon: Trash2, danger: true });
   }
+  // The template's watermark (behind every page; it can't be clicked on the
+  // page, so this is the way to it), on every page, before Delete
+  const watermark = {
+    action: "watermark" as const,
+    labelKey: watermarkAt.value ? "watermark.pageMenu.change" : "watermark.pageMenu.add",
+    icon: Stamp,
+  };
+  const danger = items.findIndex((item) => item.danger);
+  items.splice(danger === -1 ? items.length : danger, 0, watermark);
   return items;
 }
 
@@ -1502,6 +1544,7 @@ onBeforeUnmount(() => {
   color: #5b3ee0;
 }
 
+
 .delete-page-btn {
   color: #6f6a7e;
 }
@@ -1534,6 +1577,14 @@ onBeforeUnmount(() => {
 .band-grid path {
   fill: none;
   stroke: #ececec;
+}
+
+/* While the watermark is selected: the page's content fades and the watermark
+   is drawn over it, so every change to it can be seen (it prints behind) */
+.paper.is-watermark-focus .band,
+.paper.is-watermark-focus .background-band-layer {
+  opacity: 0.25;
+  transition: opacity 0.15s ease;
 }
 
 /* Sits above the bands; multiply keeps white areas white and lets the content
@@ -1573,7 +1624,8 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   margin-bottom: 0;
   position: relative;
-  background-color: rgba(255, 255, 255, 0.8);
+  /* See-through on the white page, so the watermark (drawn under the sections) shows */
+  background-color: transparent;
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease;

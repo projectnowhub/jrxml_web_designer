@@ -32,8 +32,8 @@ export function matchesSearch(project: ProjectSummary, search: string): boolean 
 export const projectListQuery = () =>
   infiniteQueryOptions({
     queryKey: projectKeys.list(),
-    queryFn: async ({ pageParam, signal }) => {
-      const page = await reportDataApi.getProjectsPage({ offset: pageParam }, signal);
+    queryFn: async ({ pageParam }) => {
+      const page = await reportDataApi.getProjectsPage({ offset: pageParam });
       seedProjects(page.rows);
       return page;
     },
@@ -131,10 +131,10 @@ export async function getProjectSummary(key: string): Promise<ProjectSummary | n
 function fetchAllProjects(): Promise<ProjectRecord[]> {
   return queryClient.fetchQuery({
     queryKey: projectKeys.everything(),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const rows: ProjectRecord[] = [];
       for (let more = true; more; ) {
-        const page = await reportDataApi.getProjectsPage({ offset: rows.length }, signal);
+        const page = await reportDataApi.getProjectsPage({ offset: rows.length });
         seedProjects(page.rows);
         rows.push(...page.rows);
         more = page.hasMore && page.rows.length > 0;

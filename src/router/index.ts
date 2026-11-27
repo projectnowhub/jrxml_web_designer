@@ -4,8 +4,8 @@ import {
   LoginView,
   CallbackView,
   DesktopLoginView,
-  MyTemplatesView,
   ActivityView,
+  DefaultSettingsView,
 } from "../views";
 import { PDFDesigner, AppLayout } from "../components";
 
@@ -25,14 +25,14 @@ const router = createRouter({
           component: HomeView,
         },
         {
-          path: "mytemplates",
-          name: "mytemplates",
-          component: MyTemplatesView,
-        },
-        {
           path: "activity",
           name: "activity",
           component: ActivityView,
+        },
+        {
+          path: "default-settings",
+          name: "defaultSettings",
+          component: DefaultSettingsView,
         },
 
       ],

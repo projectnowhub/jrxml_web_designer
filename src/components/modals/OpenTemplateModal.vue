@@ -1,13 +1,16 @@
 <template>
-  <!-- File → Open: a template saved here (the same list as the home page), or
-       a .jrxml file from the computer, which is added to that list -->
+  <!-- File → Open: one of the report server's templates (default and the
+       tenant's own, searched by name), or a .jrxml file from the computer,
+       which becomes a template on the server -->
   <BaseModal
     :visible="visible"
     :title="t('openTemplate.title')"
     :show-footer="false"
-    :content-style="{ width: 'min(560px, calc(100vw - 32px))' }"
+    :content-style="{ width: 'min(1120px, 96vw)', maxWidth: '96vw' }"
     @update:visible="emit('update:visible', $event)"
   >
+    <!-- The table setup popup's size -->
+    <div class="open-modal">
     <div class="open-tabs" role="tablist">
       <button
         v-for="item in TABS"
@@ -29,26 +32,42 @@
         <Search :size="15" :stroke-width="2.25" aria-hidden="true" />
         <input ref="searchRef" v-model="query" type="search" :placeholder="t('layout.searchTemplates')" />
       </label>
-      <ul v-if="shown.length" class="template-rows">
-        <li v-for="file in shown" :key="file.id">
+      <ul v-if="loading" class="template-rows" aria-hidden="true">
+        <li v-for="n in 6" :key="n" class="template-row skeleton-row">
+          <SkeletonBlock width="18px" height="18px" radius="5px" />
+          <span class="row-text">
+            <SkeletonBlock width="45%" height="11px" />
+            <SkeletonBlock width="25%" height="9px" />
+          </span>
+        </li>
+      </ul>
+      <ul v-else-if="shown.length" class="template-rows">
+        <li v-for="template in shown" :key="template.id">
           <button
             type="button"
             class="template-row"
-            :class="{ current: file.id === currentFileId }"
-            :disabled="file.id === currentFileId"
-            @click="choose(file)"
+            :class="{ current: template.id === currentFileId }"
+            :disabled="template.id === currentFileId"
+            @click="choose(template)"
           >
-            <FileText :size="18" class="row-icon" aria-hidden="true" />
+            <LayoutTemplate :size="18" class="row-icon" aria-hidden="true" />
             <span class="row-text">
-              <strong>{{ file.name }}</strong>
-              <small>{{ editedText(file) }}</small>
+              <strong>{{ template.name }}</strong>
+              <small>{{ editedText(template) }}</small>
             </span>
-            <span v-if="file.id === currentFileId" class="row-tag">{{ t("openTemplate.openNow") }}</span>
+            <span v-if="template.isDefault" class="row-tag">{{ t("reportCatalog.defaultTemplates.badge") }}</span>
+            <span v-if="template.id === currentFileId" class="row-tag">{{ t("openTemplate.openNow") }}</span>
           </button>
         </li>
       </ul>
       <p v-else class="empty">
-        {{ query.trim() ? t("myTemplates.noMatch", { query: query.trim() }) : t("openTemplate.none") }}
+        {{
+          shownQuery.isError.value
+            ? t("reportCatalog.defaultTemplates.loadFailed")
+            : searched
+              ? t("myTemplates.noMatch", { query: searched })
+              : t("openTemplate.none")
+        }}
       </p>
       <button type="button" class="see-all" @click="openFullPage">
         <Maximize2 :size="14" :stroke-width="2.25" aria-hidden="true" />
@@ -74,6 +93,7 @@
       </div>
       <p class="note">{{ t("openTemplate.addedNote") }}</p>
     </div>
+    </div>
   </BaseModal>
 </template>
 
@@ -81,26 +101,29 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
-import { FileText, HardDrive, LayoutTemplate, Maximize2, Search, Upload } from "@lucide/vue";
+import { useQuery } from "@tanstack/vue-query";
+import { HardDrive, LayoutTemplate, Maximize2, Search, Upload } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import BaseModal from "./BaseModal.vue";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import notification from "@/utils/notification";
 import { useTemplates } from "@/composables/useTemplates";
 import { useFilesStore } from "@/stores/files";
-import type { DesignerFile } from "@/types/designerFile";
-import { useQuery } from "@tanstack/vue-query";
-import type { TemplateSummary } from "@/types/template";
-import { fetchTemplate, templateListQuery } from "@/queries/templateQueries";
+import { defaultTemplatePageQuery } from "@/queries/reportCatalogQueries";
+import type { ReportDefinitionSummary } from "@/types/reportCatalog";
+
+// Templates listed (last edited first), and the pause after typing before it asks
+const OPEN_LIST_SIZE = 25;
+const OPEN_SEARCH_DELAY_MS = 400;
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
-  (e: "load-file", file: DesignerFile): void;
   (e: "open-jrxml", file: { name: string; content: string }): void;
 }>();
 
 const { t } = useI18n();
-const { editedText } = useTemplates();
+const { editedText, openDefaultTemplate } = useTemplates();
 const { currentFileId } = storeToRefs(useFilesStore());
 
 const TABS = ["mine", "computer"] as const;
@@ -108,17 +131,38 @@ const tab = ref<(typeof TABS)[number]>("mine");
 const query = ref("");
 const dragOver = ref(false);
 const searchRef = ref<HTMLInputElement | null>(null);
-// The first 25 that match, last edited first; See all shows the rest
+
+// The words asked for, once typing pauses
+const searched = ref("");
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch(query, (words) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => (searched.value = words.trim()), OPEN_SEARCH_DELAY_MS);
+});
+
+// The report server's templates (default and the tenant's own) whose name
+// holds the words, last edited first; See all opens the Templates page
 const shownQuery = useQuery(
-  computed(() => ({ ...templateListQuery({ q: query.value, size: 25 }), enabled: props.visible })),
+  computed(() => ({
+    ...defaultTemplatePageQuery({
+      nameContains: searched.value || undefined,
+      page: 1,
+      size: OPEN_LIST_SIZE,
+      sort: "lastModifiedDate",
+      dir: "desc",
+    }),
+    enabled: props.visible,
+  })),
 );
-const shown = computed<TemplateSummary[]>(() => shownQuery.data.value?.items ?? []);
+const shown = computed<ReportDefinitionSummary[]>(() => shownQuery.data.value?.items ?? []);
+const loading = computed(() => shownQuery.isPending.value || query.value.trim() !== searched.value);
 
 watch(
   () => props.visible,
   (open) => {
     if (!open) return;
     query.value = "";
+    searched.value = "";
     dragOver.value = false;
     tab.value = "mine";
     nextTick(() => searchRef.value?.focus());
@@ -127,19 +171,16 @@ watch(
 
 const close = () => emit("update:visible", false);
 
-// The whole list as a page (My Templates); the designer saves on leaving
+// Every template, on the Templates page; the designer keeps its changes on leaving
 const router = useRouter();
 function openFullPage() {
   close();
-  const q = query.value.trim();
-  router.push({ name: "mytemplates", query: q ? { q } : {} });
+  router.push({ name: "home" });
 }
 
-async function choose(file: TemplateSummary) {
-  const whole = await fetchTemplate(file.id);
+function choose(template: ReportDefinitionSummary) {
   close();
-  if (whole) emit("load-file", whole);
-  else notification.error(t("openTemplate.notFound"));
+  void openDefaultTemplate(template);
 }
 
 // Only JRXML templates (what Download saves)
@@ -172,9 +213,16 @@ function onDrop(event: DragEvent) {
 </script>
 
 <style scoped>
+.open-modal {
+  display: flex;
+  flex-direction: column;
+  height: min(68vh, 640px);
+}
 .open-tabs {
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
+  max-width: 520px;
   padding: 4px;
   margin-bottom: 14px;
   border-radius: 10px;
@@ -201,9 +249,13 @@ function onDrop(event: DragEvent) {
   box-shadow: 0 1px 3px rgba(23, 20, 44, 0.1);
 }
 .tab-body {
-  min-height: 300px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .open-search {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -226,10 +278,16 @@ function onDrop(event: DragEvent) {
   color: #1c1b26;
   font-size: 13px;
 }
+/* Cards in columns: the popup is wide */
 .template-rows {
-  max-height: 300px;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-content: start;
+  gap: 8px;
   margin: 0;
-  padding: 0;
+  padding: 2px;
   overflow-y: auto;
   list-style: none;
 }
@@ -238,16 +296,17 @@ function onDrop(event: DragEvent) {
   align-items: center;
   gap: 11px;
   width: 100%;
-  padding: 10px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
+  padding: 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
 }
 .template-row:hover:not(:disabled),
 .template-row:focus-visible {
-  background: rgba(124, 92, 247, 0.08);
+  border-color: #6440f4;
+  background: rgba(124, 92, 247, 0.06);
   outline: none;
 }
 .template-row.current {
@@ -286,6 +345,7 @@ function onDrop(event: DragEvent) {
   font-weight: 600;
 }
 .see-all {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -306,6 +366,7 @@ function onDrop(event: DragEvent) {
   background: rgba(124, 92, 247, 0.06);
 }
 .empty {
+  flex: 1;
   padding: 40px 0;
   color: #8a84a3;
   font-size: 12.5px;
@@ -317,6 +378,7 @@ function onDrop(event: DragEvent) {
   align-items: center;
   justify-content: center;
   gap: 7px;
+  flex: 1;
   min-height: 220px;
   padding: 20px;
   border: 1.5px dashed #cfc8f5;

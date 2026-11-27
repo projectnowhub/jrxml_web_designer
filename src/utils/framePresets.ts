@@ -2,10 +2,11 @@
 // Everything here produces plain JasperReports frames: a box (pens), a backcolor and
 // child text fields, so the result round-trips through JRXML unchanged.
 
-import type { Box, DesignElement, FrameElement, Pen } from "@/types";
+import type { Box, ContentsListData, DesignElement, FrameElement, Pen } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { DEFAULT_REPORT_FONT } from "@/config/fonts.config";
-import { CORNER_NAMES, type CornerRadii } from "@/utils/elementUtils";
+import { CORNER_NAMES, getElementBoxPadding, type CornerRadii } from "@/utils/elementUtils";
+import { minContentsListWidth } from "@/utils/contentsList";
 
 // Palette tuned for formal project/government reports: soft tints, thin rules
 export const FRAME_COLORS = {
@@ -230,29 +231,169 @@ export interface Rect {
   height: number;
 }
 
+// A box's item as the fitting reads it: its place and size, plus what decides
+// how small it may get (a text's font and padding, a contents list's columns)
+export interface FitChild extends Rect {
+  type?: string;
+  fontSize?: number;
+  box?: Box;
+  list?: ContentsListData;
+}
+
+type Axis = "x" | "y";
+type AxisRule = "stretch" | "far" | "near";
+
+// Smallest a picture, shape or other item is made by fitting
+const MIN_PART_SIZE = 8;
+// A text keeps at least one line: 1.45 × its size (what the PDF needs) …
+const TEXT_LINE_FACTOR = 1.45;
+// … and room for about two letters across
+const TEXT_MIN_LETTERS = 2;
+
+const sizeOn = (c: Rect, axis: Axis) => (axis === "x" ? c.width : c.height);
+const posOn = (c: Rect, axis: Axis) => (axis === "x" ? c.x : c.y);
+
 // One axis: children covering at least half the frame stretch with it, children
 // closer to the far edge (right/bottom) move with that edge, the rest stay put
-function fitAxis(pos: number, size: number, oldTotal: number, newTotal: number): [number, number] {
+function axisRule(pos: number, size: number, total: number): AxisRule {
+  if (size >= total * 0.5) return "stretch";
+  return total - (pos + size) < pos ? "far" : "near";
+}
+
+// How small fitting may make an item on one axis, never more than it is now:
+// a text one line of its font (and its padding), a contents list its columns
+// and its rows, anything else MIN_PART_SIZE (a line 1)
+function minPartSize(child: FitChild, axis: Axis): number {
+  const size = sizeOn(child, axis);
+  let min = MIN_PART_SIZE;
+  if (child.type === "line") min = 1;
+  else if (child.type === "contentsList" && child.list) {
+    min = axis === "x" ? minContentsListWidth(child.list) : size;
+  } else if (child.type === "textField") {
+    const font = child.fontSize || 10;
+    const pad = getElementBoxPadding(child.box);
+    min =
+      axis === "y"
+        ? Math.ceil(font * TEXT_LINE_FACTOR) + pad.top + pad.bottom
+        : Math.ceil(font * TEXT_MIN_LETTERS) + pad.left + pad.right;
+  }
+  return Math.min(size, min);
+}
+
+function fitAxis(child: FitChild, axis: Axis, oldTotal: number, newTotal: number): [number, number] {
+  const pos = posOn(child, axis);
+  const size = sizeOn(child, axis);
   const delta = newTotal - oldTotal;
-  if (size >= oldTotal * 0.5) return [pos, Math.max(1, Math.round(size + delta))];
-  const farGap = oldTotal - (pos + size);
-  if (farGap < pos) return [Math.max(0, Math.round(pos + delta)), size];
+  const rule = axisRule(pos, size, oldTotal);
+  if (rule === "stretch") return [pos, Math.max(minPartSize(child, axis), Math.round(size + delta))];
+  if (rule === "far") return [Math.max(0, Math.round(pos + delta)), size];
   return [pos, size];
 }
 
 // Positions for a frame's children after resizing the frame from `from` to `to`.
-// Always computed from the positions at the start of the resize, so repeated
-// calls during a drag don't accumulate rounding errors.
+// Always computed from the positions at the start of the resize (or of the
+// resizes before it, frameFitReference), so repeated calls during a drag don't
+// accumulate rounding errors and making a box smaller, then larger again,
+// gives its items back their own sizes.
 export function fitChildrenToFrame(
-  children: Rect[],
+  children: FitChild[],
   from: { width: number; height: number },
   to: { width: number; height: number },
 ): Rect[] {
   return children.map((c) => {
-    const [x, width] = fitAxis(c.x, c.width, from.width, to.width);
-    const [y, height] = fitAxis(c.y, c.height, from.height, to.height);
+    const [x, width] = fitAxis(c, "x", from.width, to.width);
+    const [y, height] = fitAxis(c, "y", from.height, to.height);
     return { x, y, width, height };
   });
+}
+
+// The smallest a box can be made on one axis while every item keeps at least
+// its smallest size, stays inside, and items side by side don't run into each
+// other (an item that stays put and one moving with the far edge). Never more
+// than the box is now, so a box that is already tight doesn't jump.
+function minimumOnAxis(children: FitChild[], axis: Axis, total: number): number {
+  const other: Axis = axis === "x" ? "y" : "x";
+  const rules = children.map((c) => axisRule(posOn(c, axis), sizeOn(c, axis), total));
+  let min = MIN_PART_SIZE;
+  children.forEach((c, i) => {
+    const pos = posOn(c, axis);
+    const size = sizeOn(c, axis);
+    if (rules[i] === "stretch") min = Math.max(min, total - size + minPartSize(c, axis));
+    else if (rules[i] === "far") min = Math.max(min, total - pos);
+    else min = Math.max(min, pos + size);
+  });
+  // An item that stays put above (left of) one moving up with the far edge
+  children.forEach((a, i) => {
+    if (rules[i] !== "near") return;
+    const aEnd = posOn(a, axis) + sizeOn(a, axis);
+    children.forEach((b, j) => {
+      if (i === j || rules[j] !== "far") return;
+      const bStart = posOn(b, axis);
+      const sideBySide =
+        posOn(a, other) < posOn(b, other) + sizeOn(b, other) && posOn(b, other) < posOn(a, other) + sizeOn(a, other);
+      if (sideBySide && aEnd <= bStart) min = Math.max(min, total - (bStart - aEnd));
+    });
+  });
+  return Math.min(total, Math.ceil(min));
+}
+
+export function frameMinimumSize(children: FitChild[], from: { width: number; height: number }): { width: number; height: number } {
+  return {
+    width: minimumOnAxis(children, "x", from.width),
+    height: minimumOnAxis(children, "y", from.height),
+  };
+}
+
+// The layout a box's items were fitted from, kept between resizes: when the
+// items are still exactly where the last fit put them, the next resize starts
+// from that layout again, so shrinking a box in one drag and growing it in the
+// next never squeezes its items for good. Items moved, resized, added or
+// removed in between start a new layout. Kept by the box's uuid (an undo gives
+// new objects, whose items then no longer match and start afresh).
+interface FrameFitSession {
+  from: { width: number; height: number };
+  children: Rect[];
+  result: Rect[];
+}
+const frameFitSessions = new Map<string, FrameFitSession>();
+const frameFitSessionsByObject = new WeakMap<object, FrameFitSession>();
+
+const sameRects = (a: Rect[], b: Rect[]) =>
+  a.length === b.length &&
+  a.every((r, i) => r.x === b[i]!.x && r.y === b[i]!.y && r.width === b[i]!.width && r.height === b[i]!.height);
+
+const toRect = ({ x, y, width, height }: Rect): Rect => ({ x, y, width, height });
+
+export interface FrameFitReference {
+  from: { width: number; height: number };
+  children: FitChild[];
+}
+
+// Where a resize of this box starts from (see FrameFitSession)
+export function frameFitReference(frame: FrameElement): FrameFitReference {
+  const items = (frame.elements ?? []) as FitChild[];
+  const current = items.map(toRect);
+  const session = (frame.uuid && frameFitSessions.get(frame.uuid)) || frameFitSessionsByObject.get(frame);
+  if (session && sameRects(session.result, current)) {
+    return {
+      from: { ...session.from },
+      children: items.map((item, i) => ({ ...item, ...session.children[i]! })),
+    };
+  }
+  return { from: { width: frame.width, height: frame.height }, children: items.map((item) => ({ ...item })) };
+}
+
+// Fit a box's items to its new size from `reference` and remember the layout
+// for the next resize
+export function fitFrameContent(frame: FrameElement, reference: FrameFitReference = frameFitReference(frame)): void {
+  const fitted = fitChildrenToFrame(reference.children, reference.from, { width: frame.width, height: frame.height });
+  frame.elements?.forEach((child, i) => {
+    const rect = fitted[i];
+    if (rect) Object.assign(child, rect);
+  });
+  const session: FrameFitSession = { from: reference.from, children: reference.children.map(toRect), result: fitted };
+  if (frame.uuid) frameFitSessions.set(frame.uuid, session);
+  else frameFitSessionsByObject.set(frame, session);
 }
 
 // ---------------------------------------------------------------------------

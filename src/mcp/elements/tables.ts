@@ -840,11 +840,18 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
       const splitBy = data.splitBy ? dimensionOf(schema, { column: data.splitBy }, "data.splitBy") : undefined;
       binding.series = [{ measure, ...(splitBy ? { splitBy } : {}) }];
     }
+    // Horizontal bars drawn as a line (the setup popup's Show as)
+    if (has(data, "showAs") && binding.series?.[0]) {
+      const { renderAs: _old, ...rest } = binding.series[0];
+      binding.series[0] = data.showAs === "line" && binding.chartType === "barH" ? { ...rest, renderAs: "line" } : rest;
+    }
     if (data.level2) binding.level2 = dimensionOf(schema, { column: data.level2 }, "data.level2");
     if (has(data, "stacked")) binding.stacked = !!data.stacked || undefined;
     // Split bars are stacked unless asked otherwise, as the CDP app's
     else if (data.splitBy && (binding.chartType === "bar" || binding.chartType === "barH")) binding.stacked = true;
-    if (has(data, "gaugeMax")) binding.gaugeMax = data.gaugeMax || undefined;
+    // Gauge range: none = Auto (0 to a round number above the value)
+    if (has(data, "gaugeMin")) binding.gaugeMin = typeof data.gaugeMin === "number" ? data.gaugeMin : undefined;
+    if (has(data, "gaugeMax")) binding.gaugeMax = typeof data.gaugeMax === "number" ? data.gaugeMax : undefined;
     if (has(data, "filters")) {
       (Array.isArray(data.filters) ? data.filters : []).forEach((f: { column?: string }, i: number) =>
         chartColumnOf(schema, String(f?.column ?? ""), "filterable", `data.filters[${i}].column`),
@@ -916,7 +923,9 @@ export const chartKind: ElementKind = {
         splitBy: { type: "string", description: "Line / area / bar: one line or bar set per value of this text column" },
         level2: { type: "string", description: "Tree map: text column for the items inside each group" },
         stacked: { type: "boolean", description: "Bars / areas on top of each other (split bars are stacked unless false)" },
-        gaugeMax: { type: "number", minimum: 0, description: "Gauge: end of the scale" },
+        showAs: { type: "string", enum: ["bar", "line"], description: "Horizontal bar only: draw the numbers as bars or as a line" },
+        gaugeMin: { type: "number", description: "Gauge: start of the scale (Manual range; leave out both for Auto)" },
+        gaugeMax: { type: "number", description: "Gauge: end of the scale (Manual range; leave out both for Auto)" },
         filters: FILTERS_PROP,
       },
       additionalProperties: false,
@@ -950,6 +959,9 @@ export const chartKind: ElementKind = {
             splitBy: b.series?.[0]?.splitBy?.column,
             level2: b.level2?.column,
             stacked: b.stacked,
+            showAs: b.series?.[0]?.renderAs,
+            gaugeMin: b.gaugeMin,
+            gaugeMax: b.gaugeMax,
             filters: describeFilters(b.filters),
             complete: isChartComplete(b),
           })

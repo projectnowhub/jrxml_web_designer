@@ -4,7 +4,8 @@
 // invalidating projectKeys.all marks every project query stale.
 
 import type { AggregateRequest, DataQuery } from "@/types/dataSource";
-import type { TemplateQuery } from "@/types/template";
+import type { ProjectPhotoQuery } from "@/types/projectPhoto";
+import type { ReportDefinitionQuery } from "@/types/reportCatalog";
 
 export const projectKeys = {
   all: ["projects"] as const,
@@ -36,13 +37,35 @@ export const chartKeys = {
   data: (requests: AggregateRequest[]) => [...chartKeys.all, requests] as const,
 };
 
-export const templateKeys = {
-  all: ["templates"] as const,
-  lists: () => [...templateKeys.all, "list"] as const,
-  list: (query: TemplateQuery) => [...templateKeys.lists(), query] as const,
-  // Grid: pages added while scrolling
-  infinite: (query: Omit<TemplateQuery, "page">) => [...templateKeys.all, "infinite", query] as const,
-  detail: (id: string) => [...templateKeys.all, "detail", id] as const,
+// The report server's templates (Report Definitions) and the Jmix reports
+export const reportCatalogKeys = {
+  all: ["reportCatalog"] as const,
+  // The report server's default templates (Report Definitions, read only)
+  defaultTemplates: () => [...reportCatalogKeys.all, "defaultTemplates"] as const,
+  defaultTemplatePage: (query: ReportDefinitionQuery) => [...reportCatalogKeys.defaultTemplates(), "page", query] as const,
+  defaultTemplatePages: (query: Omit<ReportDefinitionQuery, "page">) =>
+    [...reportCatalogKeys.defaultTemplates(), "infinite", query] as const,
+  // One default template with its JRXML, ready to open
+  defaultTemplate: (id: string) => [...reportCatalogKeys.defaultTemplates(), "detail", id] as const,
+  // The top bar's search: templates whose code contains the typed words
+  templateSearch: (words: string) => [...reportCatalogKeys.all, "templateSearch", words] as const,
+  // Every template code containing these words (finding a free name; always read fresh)
+  templateNames: (words: string) => [...reportCatalogKeys.all, "templateNames", words] as const,
+};
+
+
+// The signed-in user's Default Settings row on the server
+export const userSettingsKeys = {
+  all: ["userTemplateSettings"] as const,
+  current: () => [...userSettingsKeys.all, "current"] as const,
+};
+
+export const photoKeys = {
+  all: ["projectPhotos"] as const,
+  // One page of a project's photos, with its filters
+  page: (query: ProjectPhotoQuery) => [...photoKeys.all, query.projectId, query] as const,
+  // Every photo tag (the same for every project)
+  tags: () => [...photoKeys.all, "tags"] as const,
 };
 
 export const fileKeys = {

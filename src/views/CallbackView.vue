@@ -419,7 +419,6 @@ import { exchangeCode, fetchUser, loginErrorQuery } from "../services/authServic
 import { useAuthStore } from "../stores/auth";
 import { closeTab } from "../utils/closeTab";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
-import { useUserSettingsStore } from "../stores/userSettings";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -486,8 +485,6 @@ onMounted(async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     const user = await fetchUser();
     useAuthStore().setUser(user);
-    // The user's default settings (Default Settings, Snap & grid)
-    await useUserSettingsStore().syncFromServer();
 
     window.history.replaceState({}, "", "/");
     await router.replace("/");

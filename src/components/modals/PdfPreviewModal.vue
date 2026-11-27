@@ -162,9 +162,9 @@ import type { Band, ChartElement, DesignElement, FrameElement } from "../../type
 import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow, TableTotals } from "@/types/dataSource";
 import { fetchTableTotals } from "@/queries/dataSourceQueries";
-import { generatePdf, ReportGenerationError } from "../../services/reportService";
-import { previewSubDataSources, templateDetails } from "../../utils/reportRun";
-import { useReportStore } from "@/stores/report";
+import { ApiError } from "@/services/apiClient";
+import { runTemplatePdf } from "../../utils/reportRun";
+import type { TemplatePdfRun } from "@/types/reportCatalog";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { collectBoundTables } from "@/utils/table/tableDocument";
@@ -175,11 +175,11 @@ const { t, locale } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
-  // Gets the report ready (charts, barcodes, maps, project) and gives its JRXML
-  prepare: () => Promise<string>;
+  // Gets the template ready (charts, barcodes, maps, project), saves it on the
+  // report server and gives the Jmix report to run
+  prepare: () => Promise<TemplatePdfRun>;
   bands: Band[];
 }>();
-const report = useReportStore();
 
 const emit = defineEmits<{
   "update:visible": [visible: boolean];
@@ -288,7 +288,8 @@ function setPreviewUrl(url: string) {
 }
 
 async function generatePreview() {
-  // Cancel an in-flight request so a slower, older response can't overwrite a newer one
+  // A newer preview replaces an older one: the older answer is ignored when it
+  // arrives (requests are never cancelled, see apiClient)
   previewController?.abort();
   const controller = new AbortController();
   previewController = controller;
@@ -297,21 +298,17 @@ async function generatePreview() {
   pdfError.value = "";
 
   try {
-    // The report made ready, then the JRXML and details.json: the report server fetches the data itself
-    const jrxml = await props.prepare();
+    // The template made ready and saved, then its Jmix report run on the server
+    const run = await props.prepare();
     if (controller.signal.aborted) return;
-    const details = templateDetails(props.bands, report.reportProperties.projects?.[0]);
-    // TEMPORARY: each data table's first rows, so the PDF shows real data until the server reads details.json
-    const subDataSources = await previewSubDataSources(props.bands);
-    if (controller.signal.aborted) return;
-    const pdf = await generatePdf({ jrxml, details, subDataSources }, controller.signal);
+    const pdf = await runTemplatePdf(run);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
     pdfState.value = "ready";
   } catch (error) {
     if ((error as Error).name === "AbortError" || controller.signal.aborted) return;
     // 401 is already handled by apiClient (redirect to login)
-    if (error instanceof ReportGenerationError && error.status === 401) return;
+    if (error instanceof ApiError && error.status === 401) return;
     // Shown in the PDF area, with the server's own words when it sent some
     console.error("Failed to preview PDF:", error);
     pdfError.value = errorText(error);

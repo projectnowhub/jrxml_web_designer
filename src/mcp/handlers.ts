@@ -12,9 +12,6 @@ import type { BandType, ChartElement, DesignElement, FrameElement } from '@/type
 import { BAND_TYPE_CONSTANTS } from '@/constants/constants';
 import { findPageBorder, markBoxPart } from '@/utils/framePresets';
 import { specialPages } from '@/utils/specialPages';
-import { formatXml } from '@/utils/jrxml/formatXml';
-import { generatePdf } from '@/services/reportService';
-import { ensureTemplateProject, templateDetails } from '@/utils/reportRun';
 import { projectValueOf } from '@/utils/projectValue';
 import { fillPage } from './flow';
 import { attachmentImageSource, type ChatAttachment } from './attachments';
@@ -89,6 +86,9 @@ export interface MCPContext {
   // Cover / contents pages and their designs, page kinds, deleting pages;
   // returns why it can't be done, or null
   pageTool?: (request: PageToolRequest) => Promise<string | null>;
+  // check_pdf: the template saved on the report server and its Jmix report
+  // run there, as Preview PDF does; gives the PDF
+  buildPdf?: () => Promise<Blob>;
   // Files the user attached in the chat, by id ("img-1"): pictures can be put
   // into the report as image source "attachment:<id>"
   attachments?: Map<string, ChatAttachment>;
@@ -957,16 +957,14 @@ function pdfPageCount(bytes: Uint8Array): number {
   return [...text.matchAll(/\/Type\s*\/Page(?![a-zA-Z])/g)].length;
 }
 
-// The real thing: the report server builds the PDF from the JRXML
+// The real thing: the report server builds the PDF, as Preview PDF does
+// (the template saved, then its Jmix report run)
 const checkPdfHandler: MCPToolHandler = {
-  execute: async () => {
+  execute: async (_params, context) => {
     const r = useReportStore();
-    await ensureTemplateProject(r.reportProperties.projects?.[0]?.id);
-    r.updateJrxml();
+    if (!context.buildPdf) return fail('The PDF check is not available here');
     try {
-      // As Preview PDF sends it: the JRXML and details.json
-      const details = templateDetails(r.bands, r.reportProperties.projects?.[0]);
-      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent), details });
+      const blob = await context.buildPdf();
       const pages = pdfPageCount(new Uint8Array(await blob.arrayBuffer()));
       const expected = r.totalPages;
       const tables = r.bands.some((b) => b.elements.some((e) => e.type === 'table'));
@@ -980,7 +978,7 @@ const checkPdfHandler: MCPToolHandler = {
             : {})
       });
     } catch (error) {
-      return fail(`The PDF could not be built: ${error instanceof Error ? error.message : String(error)}. If it is a report error, fix it; if the report server is not set up, skip this check`);
+      return fail(`The PDF could not be built: ${error instanceof Error ? error.message : String(error)}. If it is a report error, fix it; if the template is not on the report server or can't be saved there, skip this check`);
     }
   }
 };

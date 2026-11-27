@@ -166,6 +166,7 @@
       <!-- Element properties tabs -->
       <!-- Tabs: the highlight slides to the open tab (positioned by index) -->
       <div
+        v-if="availableTabs.length > 1"
         class="prop-tab-bar"
         role="tablist"
         :style="{ '--tab-count': availableTabs.length, '--tab-index': availableTabs.indexOf(activeTab) }"
@@ -186,7 +187,7 @@
       </div>
 
       <!-- Style Settings: take every style off this element (content, place and size stay) -->
-      <div v-if="activeTab === 'style'" class="reset-style-row">
+      <div v-if="activeTab === 'style' && !watermarkElement" class="reset-style-row">
         <button type="button" class="chip-btn" :title="t('resetStyle.hint')" @click="resetStyle">
           <RotateCcw :size="13" aria-hidden="true" />
           {{ t("resetStyle.label") }}
@@ -194,8 +195,12 @@
       </div>
 
       <Transition name="prop-tab-fade" mode="out-in">
+        <!-- Watermark: its own settings, nothing of an ordinary picture -->
+        <div v-if="watermarkElement" key="watermark" class="prop-tab-pane" role="tabpanel">
+          <WatermarkProperties :key="watermarkElement.uuid" :element="watermarkElement" />
+        </div>
         <!-- Basic properties tab -->
-        <div v-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
+        <div v-else-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
           <!-- Table: where its content comes from (one Table element, two kinds) -->
           <div v-if="isTableElement" class="box-section compact">
             <h5>{{ t("customTable.content") }}<SettingHelpButton id="tableContent" /></h5>
@@ -300,21 +305,14 @@
                 <button
                   type="button"
                   class="chip-btn chip-btn-solid"
-                  :disabled="isPropertiesImageUploading"
-                  @click="triggerPropertiesImageUpload"
+                  @click="pictureChooserOpen = true"
                 >
-                  <Upload :size="13" aria-hidden="true" />
-                  {{ isPropertiesImageUploading ? t("properties.uploadingImage") : t("properties.uploadImageButton") }}
+                  <ImagePlus :size="13" aria-hidden="true" />
+                  {{ t("properties.choosePictureButton") }}
                 </button>
               </div>
               <small class="card-hint">{{ t("properties.imageNameHint") }}</small>
-              <input
-                ref="propImageFileInputRef"
-                type="file"
-                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-                style="display: none"
-                @change="handlePropertiesImageUpload"
-              />
+              <PictureChooserModal v-model:visible="pictureChooserOpen" @choose="applyChosenPicture" />
             </div>
             <!-- Shape: preset corner looks, cards like the box border presets
                  (custom corners are in Style Settings) -->
@@ -966,7 +964,8 @@
 
       </Transition>
 
-      <div class="element-actions">
+      <!-- The watermark has its own Remove button in its panel -->
+      <div v-if="!watermarkElement" class="element-actions">
         <button type="button" class="delete-element-btn" @click="deleteElement">
           <Trash2 :size="14" aria-hidden="true" />
           {{ t("properties.deleteElement") }}
@@ -999,7 +998,7 @@ import {
   TextAlignStart,
   Trash2,
   Info,
-  Upload,
+  ImagePlus,
   X,
 } from "@lucide/vue";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../../config/fonts.config";
@@ -1009,7 +1008,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
 import { pageKind } from "@/utils/specialPages";
-import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, ImageElement, SelectedElementInfo, TableElement } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -1025,14 +1024,11 @@ import {
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
-  setImageCrop,
-  setImageName,
+  setImagePicture,
 } from "../../../utils/elementUtils";
-import {
-  ImageUploadError,
-  resolveImageSource,
-  toImageExpression,
-} from "../../../services/imageService";
+import { toImageExpression } from "../../../services/imageService";
+import PictureChooserModal from "../../modals/PictureChooserModal.vue";
+import type { ChosenPicture } from "@/types/projectPhoto";
 import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
@@ -1046,6 +1042,8 @@ import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
 import LocationProperties from "./LocationProperties.vue";
+import WatermarkProperties from "./WatermarkProperties.vue";
+import { isWatermark } from "../../../utils/watermark/watermarkElement";
 import { isLocationElement, isLocationPart } from "../../../utils/location/locationElement";
 import PanelTip from "../../help/PanelTip.vue";
 import SettingHelpButton from "../../help/SettingHelpButton.vue";
@@ -1054,7 +1052,7 @@ import PageSetupSection, { type PageSetupValue } from "../PageSetupSection.vue";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import { cardsWithoutHelp } from "@/utils/helpCoverage";
 import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
-import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
+import { hasProperty, minContentsListWidth, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
@@ -1068,9 +1066,15 @@ import {
   getBoxCornerRadii,
   setBoxCornerRadii,
   clampRectInBox,
+  fitFrameContent,
+  frameFitReference,
+  frameMinimumSize,
   isBoxPart,
   isUniformBorder,
+  type FrameFitReference,
 } from "../../../utils/framePresets";
+import { scaleColumnWidths } from "../../../utils/table/dataTable";
+import { MIN_TABLE_COLUMN_WIDTH } from "../../../utils/table/dataBinding";
 import { STATUS_COLORS } from "../../../utils/reportParts";
 import TableDataPanel from "./TableDataPanel.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
@@ -1098,6 +1102,7 @@ interface Emits {
   (e: "configure-chart"): void;
   // Paper or margins changed: the designer fits the page's content to it
   (e: "page-setup-change"): void;
+  // Template Settings' Watermark card: add one
 }
 
 const props = defineProps<Props>();
@@ -1288,6 +1293,13 @@ const locationBox = computed<FrameElement | null>(() => {
   return isLocationElement(box) ? (box as FrameElement) : null;
 });
 
+// The watermark (an image in the Background band) has a panel of its own
+const watermarkElement = computed<ImageElement | null>(() => {
+  const sel = selectedElement.value;
+  const el = currentElement.value;
+  return sel && sel.parentFrameIndex === undefined && isWatermark(el) ? (el as ImageElement) : null;
+});
+
 const isPageBorder = computed(
   () =>
     currentElement.value?.type === "frame" &&
@@ -1416,7 +1428,16 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     return false;
   }
   report.saveStateToHistory();
+  const sizing = property === "width" || property === "height";
+  // A box's items are fitted to a typed size as when it is resized on the page
+  const boxReference = sizing && target.type === "frame" ? frameFitReference(target as FrameElement) : null;
+  const sizeBefore = { width: target.width, height: target.height };
   target[property] = parsed;
+  const smallest = typedSizeMinimum(target, boxReference, sizeBefore);
+  if (sizing && smallest && target[property] < smallest[property as "width" | "height"]) {
+    target[property] = smallest[property as "width" | "height"];
+    notification.info(t("sectionFit.keptMinimum", { value: target[property] }));
+  }
   // A ready-made box's own part keeps inside the box when its position or size is typed
   const parentIndex = selectedElement.value?.parentFrameIndex;
   if (
@@ -1429,9 +1450,36 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
   }
   if (parentIndex === undefined && target === currentElement.value) keepTypedRectInSection(target, property);
+  if (boxReference) fitFrameContent(target as FrameElement, boxReference);
+  // A project-data table's columns keep their shares of a typed width
+  if (property === "width" && target.type === "table" && (target as TableElement).binding) {
+    const binding = (target as TableElement).binding!;
+    binding.columns = scaleColumnWidths(binding.columns, target.width);
+  }
   input.value = String(target[property]);
   report.updateJrxml();
   return true;
+}
+
+// The smallest size a typed width / height may give: a box what its items
+// need, a project-data table its columns at their narrowest, a contents list
+// its number and page columns (never more than it is now)
+function typedSizeMinimum(
+  target: DesignElement,
+  boxReference: FrameFitReference | null,
+  before: { width: number; height: number },
+): { width: number; height: number } | null {
+  if (boxReference) {
+    const min = frameMinimumSize(boxReference.children, boxReference.from);
+    return { width: Math.min(min.width, before.width), height: Math.min(min.height, before.height) };
+  }
+  if (target.type === "table" && (target as TableElement).binding) {
+    return { width: (target as TableElement).binding!.columns.length * MIN_TABLE_COLUMN_WIDTH, height: 1 };
+  }
+  if (target.type === "contentsList") {
+    return { width: Math.min(before.width, minContentsListWidth((target as ContentsListElement).list)), height: 1 };
+  }
+  return null;
 }
 
 // A position or size typed for an element in a section stays inside it (a
@@ -1671,48 +1719,22 @@ function addCrossingLine() {
   report.updateJrxml();
 }
 
-// Image upload handling for Image elements in Properties panel
-const propImageFileInputRef = ref<HTMLInputElement | null>(null);
-const isPropertiesImageUploading = ref(false);
+// The picture of the selected Image element: the chooser (project photos or a
+// file from the computer). The name shown is read-only, taken from the file.
+const pictureChooserOpen = ref(false);
+// The upload may take a while: the picture goes to the image that opened the
+// chooser, even if the selection changed meanwhile
+let pictureTarget: DesignElement | null = null;
+watch(pictureChooserOpen, (open) => {
+  if (open) pictureTarget = currentElement.value ?? null;
+});
 
-function triggerPropertiesImageUpload() {
-  if (propImageFileInputRef.value) {
-    propImageFileInputRef.value.value = "";
-    propImageFileInputRef.value.click();
-  }
-}
-
-// Image name handling for Image elements in the Properties panel.
-// The name is read-only: it is filled in automatically when an image is uploaded
-// and is never edited manually, so the image expression is never modified.
-async function handlePropertiesImageUpload(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  const element = currentElement.value;
-  if (!file || !element || isPropertiesImageUploading.value) return;
-
-  isPropertiesImageUploading.value = true;
-  try {
-    const source = await resolveImageSource(file);
-    // The upload is async: apply it to the element that started it, even if selection changed
-    if (element.type !== "image") return;
-    report.saveStateToHistory();
-    (element as any).imageExpression = toImageExpression(source);
-    // Use the uploaded file name as the image name shown in the panels
-    setImageName(element, file.name || "");
-    // A crop belongs to the previous picture
-    setImageCrop(element, null);
-    report.updateJrxml();
-  } catch (error) {
-    console.error("Image upload failed:", error);
-    notification.error(
-      error instanceof ImageUploadError
-        ? t(error.messageKey, error.params)
-        : t("imageUpload.uploadFailed"),
-    );
-  } finally {
-    isPropertiesImageUploading.value = false;
-  }
+function applyChosenPicture(picture: ChosenPicture) {
+  const element = pictureTarget;
+  if (!element || element.type !== "image") return;
+  report.saveStateToHistory();
+  setImagePicture(element, toImageExpression(picture.source), picture.name);
+  report.updateJrxml();
 }
 
 // Border editors write into element.box; create it for elements that have none yet
@@ -1793,6 +1815,7 @@ const panelTitle = computed(() => {
   if (isProjectValue(el)) return t(isProjectDate(el) ? "elementNames.projectDate" : "elementNames.projectValue");
   if (isLocationElement(el)) return t("elementNames.location");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
+  if (isWatermark(el)) return t("elementNames.watermark");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return t("elementNames.partSubHeading");
@@ -1896,6 +1919,7 @@ const panelKind = computed(() => {
   if (isProjectValue(el)) return isProjectDate(el) ? "projectDate" : "projectValue";
   if (isLocationElement(el) || isLocationPart(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
+  if (isWatermark(el)) return "watermark";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";
   return el.type as string;
@@ -1909,7 +1933,8 @@ const TAB_LABELS: Record<string, string> = {
   basic: "properties.basicProperties",
   style: "properties.styleSettings",
 };
-const availableTabs = computed(() => ["basic", "style"]);
+// A watermark's settings are all in one place: no tabs to choose from
+const availableTabs = computed(() => (watermarkElement.value ? ["basic"] : ["basic", "style"]));
 
 // "Reset style": one undo step
 function resetStyle() {

@@ -41,14 +41,14 @@ export const formatChartNumber = (value: number | null | undefined): string =>
   value === null || value === undefined || !Number.isFinite(value) ? "-" : fullNumber.format(value);
 const formatAxisNumber = (value: number) => shortNumber.format(value);
 
-// A round upper end for a gauge showing this value (68 -> 100, 1284 -> 2000)
-function niceMax(value: number): number {
-  if (!(value > 0)) return 100;
-  const step = 10 ** Math.floor(Math.log10(value));
-  for (const factor of [1, 2, 2.5, 5, 10]) {
-    if (step * factor >= value * 1.1) return step * factor;
-  }
-  return step * 10;
+// A gauge's Auto range, as the CDP app's computeAutoGaugeRange: 0 to the
+// value rounded up to 1 / 2 / 5 / 10 × its order of magnitude (68 -> 100)
+export function autoGaugeRange(value: number | null | undefined): { min: number; max: number } {
+  const v = value ?? 0;
+  if (!(v > 0)) return { min: 0, max: 100 };
+  const magnitude = 10 ** Math.floor(Math.log10(v));
+  const step = [1, 2, 5, 10].find((s) => v <= s * magnitude) ?? 10;
+  return { min: 0, max: step * magnitude };
 }
 
 // A colour mixed with white (0 = unchanged, 1 = white)
@@ -240,23 +240,41 @@ export function buildChartOption(
     },
   };
 
-  // Dates: every bucket keeps its label, as the CDP app's charts; slanted when
-  // they don't fit side by side, and only when even slanted they would touch
-  // is every second (third…) one left out. Text: every category keeps its
-  // label, shortened to fit.
+  // Category labels (dates and text alike): side by side when they fit;
+  // slanted when they don't, as the CDP app's charts; and only when even
+  // slanted they would touch is every second (third…) one left out. Long text
+  // labels are shortened with "…" (to fit side by side, or to a slanted
+  // length that leaves the plot its room). 41 item names each squeezed into
+  // 11 px used to print on top of each other.
   const LABEL_SLANT = 40;
   // A slanted label needs about this much room across, so labels never touch
   const SLANTED_ACROSS = LABEL_SIZE * 1.8;
+  const isTextAxis = binding.dimension?.type === "text";
+  // The longest a slanted text label may be (it takes room below the plot)
+  const slantedTextMax = Math.max(40, Math.min(110, plotHeight * 0.4));
   const labelSpacing = (categories: string[]) => plotWidth / Math.max(1, categories.length);
   const longestLabel = (categories: string[]) => Math.max(0, ...categories.map((c) => c.length)) * LABEL_SIZE * 0.58;
-  const slantsDates = (categories: string[]) =>
-    binding.dimension?.type === "date" && longestLabel(categories) > labelSpacing(categories) - 4;
-  const dateLabels = (categories: string[], horizontal: boolean) => {
-    if (horizontal) return { hideOverlap: true };
-    if (!slantsDates(categories)) return { interval: 0, alignMinLabel: "left", alignMaxLabel: "right" };
-    const spacing = labelSpacing(categories);
-    return { interval: spacing >= SLANTED_ACROSS ? 0 : Math.ceil(SLANTED_ACROSS / spacing) - 1, rotate: LABEL_SLANT };
+  // How far a slanted label reaches (text ones are cut at slantedTextMax)
+  const labelReach = (categories: string[]) =>
+    isTextAxis ? Math.min(longestLabel(categories), slantedTextMax) : longestLabel(categories);
+  const slantsLabels = (categories: string[]) =>
+    (binding.dimension?.type === "date" || isTextAxis) && longestLabel(categories) > labelSpacing(categories) - 4;
+  const columnLabels = (categories: string[]) => {
+    if (slantsLabels(categories)) {
+      const spacing = labelSpacing(categories);
+      return {
+        interval: spacing >= SLANTED_ACROSS ? 0 : Math.ceil(SLANTED_ACROSS / spacing) - 1,
+        rotate: LABEL_SLANT,
+        ...(isTextAxis ? { overflow: "truncate", width: slantedTextMax } : {}),
+      };
+    }
+    return isTextAxis
+      ? { interval: 0, overflow: "truncate", width: Math.max(16, labelSpacing(categories) - 6) }
+      : { interval: 0, alignMinLabel: "left", alignMaxLabel: "right" };
   };
+  // Horizontal bars: text names in a left column, cut to fit; dates skip what would overlap
+  const rowLabels = () =>
+    isTextAxis ? { interval: 0, overflow: "truncate", width: Math.max(30, width * 0.28) } : { hideOverlap: true };
   const categoryAxis = (categories: string[], boundaryGap: boolean, horizontal = false) => ({
     type: "category",
     data: categories,
@@ -266,13 +284,7 @@ export function buildChartOption(
     axisLabel: {
       fontSize: LABEL_SIZE,
       color: MUTED_COLOR,
-      ...(binding.dimension?.type === "text"
-        ? {
-            interval: 0,
-            overflow: "truncate",
-            width: horizontal ? Math.max(30, width * 0.28) : Math.max(16, plotWidth / Math.max(1, categories.length) - 6),
-          }
-        : dateLabels(categories, horizontal)),
+      ...(horizontal ? rowLabels() : columnLabels(categories)),
     },
   });
   const valueAxis = {
@@ -291,10 +303,10 @@ export function buildChartOption(
     right: PAD + 4,
     containLabel: true,
   };
-  // Slanted date labels reach left of the first bucket: room for the first one
+  // Slanted labels reach left of the first category: room for the first one
   const gridFor = (categories: string[]) =>
-    slantsDates(categories)
-      ? { ...grid, left: PAD + Math.max(0, longestLabel(categories) * Math.cos((LABEL_SLANT * Math.PI) / 180) - labelSpacing(categories) / 2) }
+    slantsLabels(categories)
+      ? { ...grid, left: PAD + Math.max(0, labelReach(categories) * Math.cos((LABEL_SLANT * Math.PI) / 180) - labelSpacing(categories) / 2) }
       : grid;
 
   // Nothing matched the filters: say so instead of drawing empty axes
@@ -347,8 +359,8 @@ export function buildChartOption(
       option.series = [
         {
           type: "gauge",
-          min: 0,
-          max: binding.gaugeMax ?? niceMax(value),
+          min: binding.gaugeMin ?? autoGaugeRange(value).min,
+          max: binding.gaugeMax ?? autoGaugeRange(value).max,
           center: [centerX, gaugeCenterY],
           radius,
           startAngle: 210,
@@ -410,16 +422,30 @@ export function buildChartOption(
       // Horizontal bars list the first category at the top
       option.xAxis = horizontal ? valueAxes(data.series) : categoryAxis(data.categories, true);
       option.yAxis = horizontal ? { ...categoryAxis(data.categories, true, true), inverse: true } : valueAxes(data.series);
-      option.series = data.series.map((s) => ({
-        type: "bar",
-        name: s.name,
-        data: s.values,
-        [horizontal ? "xAxisIndex" : "yAxisIndex"]: s.axis ?? 0,
-        barMaxWidth: 48,
-        barGap: "20%",
-        ...(binding.stacked ? { stack: `total${s.axis ?? 0}` } : {}),
-        itemStyle: { borderRadius: binding.stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },
-      }));
+      option.series = data.series.map((s) =>
+        // Horizontal bars shown as a line (the CDP app's "Show as")
+        s.line
+          ? {
+              type: "line",
+              name: s.name,
+              data: s.values,
+              xAxisIndex: s.axis ?? 0,
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 4,
+              lineStyle: { width: 2 },
+            }
+          : {
+              type: "bar",
+              name: s.name,
+              data: s.values,
+              [horizontal ? "xAxisIndex" : "yAxisIndex"]: s.axis ?? 0,
+              barMaxWidth: 48,
+              barGap: "20%",
+              ...(binding.stacked ? { stack: `total${s.axis ?? 0}` } : {}),
+              itemStyle: { borderRadius: binding.stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },
+            },
+      );
       break;
     }
 

@@ -8,6 +8,7 @@
 import { queryOptions } from "@tanstack/vue-query";
 import { reportDataApi } from "@/services/reportDataService";
 import { toSourceFacets, toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
+import { HIDDEN_TABLE_ENTITIES } from "@/constants/reportDataConstants";
 import { buildTableTotalRequests, totalColumns } from "@/services/helpers/tableTotalHelpers";
 import type {
   AggregateRequest,
@@ -15,6 +16,7 @@ import type {
   DataQueryResult,
   DataRow,
   DataSourceSchema,
+  DataSourceSummary,
   SourceFacets,
   TableDataBinding,
   TableTotals,
@@ -29,7 +31,7 @@ import { chartKeys, dataSourceKeys, projectKeys } from "./queryKeys";
 export const entitiesQuery = () =>
   queryOptions({
     queryKey: dataSourceKeys.entities(),
-    queryFn: ({ signal }) => reportDataApi.getEntities(signal),
+    queryFn: () => reportDataApi.getEntities(),
     staleTime: DATA_STALE_TIME,
   });
 
@@ -84,14 +86,14 @@ export function rowsQuery(projectId: string, sourceId: string, query: DataQuery)
   const answered = () => largerRowsRequest(projectId, sourceId, query, true);
   return queryOptions({
     queryKey: dataSourceKeys.rows(projectId, sourceId, query),
-    queryFn: async ({ signal }): Promise<DataQueryResult> => {
+    queryFn: async (): Promise<DataQueryResult> => {
       const larger = largerRowsRequest(projectId, sourceId, query, false);
       if (larger) {
         const data = await queryClient.fetchQuery(rowsQuery(projectId, sourceId, larger.query));
         return firstRows(data, query.limit);
       }
       if (isProjectListSource(sourceId)) return projectListRows(projectId, sourceId, query);
-      return reportDataApi.getTableRows(projectId, sourceId, query, signal);
+      return reportDataApi.getTableRows(projectId, sourceId, query);
     },
     staleTime: DATA_STALE_TIME,
     initialData: () => {
@@ -110,8 +112,8 @@ export function rowsQuery(projectId: string, sourceId: string, query: DataQuery)
 export const tableTotalQuery = (projectId: string, sourceId: string, request: AggregateRequest) =>
   queryOptions({
     queryKey: dataSourceKeys.total(projectId, sourceId, request),
-    queryFn: async ({ signal }): Promise<number | null> =>
-      (await reportDataApi.postChartAggregate(request, signal)).totalValue ?? null,
+    queryFn: async (): Promise<number | null> =>
+      (await reportDataApi.postChartAggregate(request)).totalValue ?? null,
     staleTime: DATA_STALE_TIME,
   });
 
@@ -121,12 +123,16 @@ export function tableTotalRequests(binding: TableDataBinding) {
   return totalColumns(binding).map((column, i) => ({ column, request: requests[i]! }));
 }
 
+// The tables offered to the user (Report Data, the setup popups, the AI):
+// every entity but the ones hidden in this version (HIDDEN_TABLE_ENTITIES)
+export const offeredTables = (entities: EntityMetadata[]): DataSourceSummary[] =>
+  entities.filter((e) => !HIDDEN_TABLE_ENTITIES.includes(e.entityName)).map(toSourceSummary);
+
 // ---- Outside components (same cache) ---------------------------------------
 
 // A project's tables (every project has the same ones; the project only
 // decides which rows they hold), and one table's columns
-export const fetchSources = async (_projectId: string) =>
-  (await queryClient.fetchQuery(entitiesQuery())).map(toSourceSummary);
+export const fetchSources = async (_projectId: string) => offeredTables(await queryClient.fetchQuery(entitiesQuery()));
 export async function fetchSchema(_projectId: string, sourceId: string): Promise<DataSourceSchema> {
   const schema = schemaFrom(await queryClient.fetchQuery(entitiesQuery()), sourceId);
   if (!schema) throw new Error(`Unknown data source: ${sourceId}`);

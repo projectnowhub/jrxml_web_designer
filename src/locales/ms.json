@@ -9,8 +9,8 @@
     "showLeftPanel": "Tunjukkan Panel Kiri",
     "hideRightPanel": "Sembunyikan Panel Kanan",
     "showRightPanel": "Tunjukkan Panel Kanan",
-    "hideBottomPanel": "Sembunyikan Tetapan Lalai",
-    "showBottomPanel": "Tunjukkan Tetapan Lalai",
+    "hideBottomPanel": "Sembunyikan panel pembangun",
+    "showBottomPanel": "Tunjukkan panel pembangun",
     "snapMenu": "Jajaran & grid",
     "showGrid": "Tunjukkan Grid",
     "showGridInfo": "Menunjukkan garisan grid pada halaman semasa anda mereka bentuk. Ia tidak dicetak dalam PDF.",
@@ -27,8 +27,7 @@
     "help": "Bantuan",
     "delete": "Padam",
     "copy": "Salin",
-    "paste": "Tampal",
-    "defaultSettings": "Tetapan Lalai"
+    "paste": "Tampal"
   },
   "fileManager": {
     "title": "Fail",
@@ -39,12 +38,9 @@
     "loadingFileFailed": "Gagal memuatkan fail",
     "jrxmlOpened": "\"{name}\" telah dibuka",
     "onlyJrxml": "Hanya fail .jrxml\nPilih fail templat yang berakhir dengan .jrxml.",
-    "deleteAllFiles": "Padam Semua Templat",
-    "deleteAllFilesConfirm": "Padam setiap templat yang disimpan dalam pelayar ini? Templat yang dibuka turut dipadam dan templat baharu yang kosong dibuka. Ini tidak boleh dibuat asal. Muat turun dahulu templat yang ingin anda simpan.",
-    "deleteAllFilesDone": "Semua templat yang disimpan telah dipadam",
     "invalidFileFormat": "Fail ini tidak boleh dibuka\nIa bukan fail templat yang sah.",
     "untitledReport": "Templat Tanpa Nama",
-    "templateNotFound": "Templat tidak ditemui\nIa tidak disimpan dalam pelayar ini, jadi templat baharu dimulakan."
+    "templateNotFound": "Templat tidak ditemui\nAlamat itu tidak menamakan templat di pelayan laporan, jadi templat baharu telah dicipta."
   },
   "elementLibrary": {
     "title": "Pustaka Elemen",
@@ -117,7 +113,7 @@
     "tileHowChoose": "Klik untuk memilih, atau seret ke halaman.",
     "tileHints": {
       "textField": "Perkataan pada halaman: tajuk, perenggan dan label.",
-      "image": "Gambar atau logo dari komputer anda.",
+      "image": "Gambar atau logo: salah satu foto projek, atau fail dari komputer anda.",
       "line": "Garis lurus untuk memisahkan bahagian halaman.",
       "rectangle": "Bentuk untuk jalur, garisan dan latar berwarna.",
       "ellipse": "Bulatan atau bujur, contohnya titik status berwarna.",
@@ -127,7 +123,8 @@
       "barcode": "Kod bar atau kod QR.",
       "pageNumber": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
       "dateTime": "Tarikh yang diisi sendiri: hari laporan dicetak, bulan ini atau bulan lepas.",
-      "location": "Peta sesuatu tempat dengan pin, dan alamatnya. Taip tempat itu, atau seret Lokasi dari Data Laporan."
+      "location": "Peta sesuatu tempat dengan pin, dan alamatnya. Taip tempat itu, atau seret Lokasi dari Data Laporan.",
+      "watermark": "Teks pudar atau gambar pudar di belakang setiap halaman. Pilih apa yang ditunjukkan dan sekuat mana ia dicetak. Untuk kembali kepadanya kemudian, buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air."
     }
   },
   "bandNames": {
@@ -152,6 +149,7 @@
     "frameTitledSection": "Kotak Seksyen",
     "framePhotoCard": "Kotak Foto",
     "framePageBorder": "Sempadan Halaman",
+    "watermark": "Tera Air",
     "table": "Jadual",
     "chart": "Carta",
     "barcode": "Kod Bar",
@@ -241,7 +239,7 @@
     "downloadJRXML": "Muat Turun JRXML",
     "saveJRXML": "Simpan JRXML",
     "changeImage": "Tukar Imej",
-    "dropOrDoubleClickToUpload": "Lepaskan imej atau klik dua kali untuk memuat naik",
+    "dropOrDoubleClickToUpload": "Lepaskan gambar, atau klik dua kali untuk memilih",
     "uploadingImage": "Memuat naik...",
     "loadingImage": "Memuatkan...",
     "storedImagePreviewUnavailable": "Pratonton tidak tersedia",
@@ -292,7 +290,7 @@
     "imageExpression": "Ungkapan Imej",
     "imageExpressionHint": "cth., \"logo.png\" atau {imageFileHolder}",
     "imageName": "Nama Imej",
-    "imageNameHint": "Baca sahaja: diambil daripada fail imej yang dimuat naik",
+    "imageNameHint": "Baca sahaja: nama gambar yang dipilih",
     "radius": "Jejari",
     "columnBreak": "Pemisah Lajur",
     "breakNoBorder": "Elemen pemisah tidak menyokong tetapan sempadan.",
@@ -408,7 +406,6 @@
     "storedImage": "Imej tersimpan",
     "imageUploadHint": "PNG, JPG, JPEG · maks 4 MB",
     "imagePreview": "Pratonton imej",
-    "uploadImageButton": "Muat Naik Imej (PNG, JPG · maks 4 MB)",
     "rotation": "Putaran",
     "rotationNone": "0° - Tiada putaran",
     "rotationRight": "90° ikut arah jam",
@@ -488,7 +485,8 @@
     "positionSize": "Kedudukan & saiz",
     "insertFieldLabel": "Masukkan medan data",
     "outline": "Garis luar",
-    "lineSettings": "Garisan"
+    "lineSettings": "Garisan",
+    "choosePictureButton": "Pilih gambar"
   },
   "bottomPanel": {
     "pageSettings": "Tetapan Lalai",
@@ -545,7 +543,6 @@
     "saveAsGlobalDefault": "Simpan sebagai Lalai Global",
     "resetDefaults": "Set Semula ke Lalai",
     "applyToCurrentTemplate": "Guna pada templat ini",
-    "appliedToTemplateSuccess": "Digunakan pada templat ini.",
     "savedAsGlobalDefault": "Kekangan semasa disimpan sebagai lalai untuk semua templat baharu.",
     "resetToDefaultSuccess": "Kekangan jalur telah diset semula kepada lalai sistem.",
     "resetToDeveloperDefaultsSuccess": "Kembali kepada asal.",
@@ -555,9 +552,9 @@
     "customPaperSize": "Tersuai",
     "maximize": "Ketinggian penuh (hingga ke pengepala). Petua: klik dua kali pada tepi atas panel.",
     "restore": "Kembali ke ketinggian sebelumnya",
-    "detailsJson": "JSON Butiran",
-    "detailsNote": "details.json: dari mana data templat ini datang, untuk pelayan laporan (pembangun sahaja).",
-    "detailsCopied": "details.json disalin",
+    "reportBands": "Jalur Laporan",
+    "userDefaultsJson": "JSON Tetapan Lalai Pengguna",
+    "developerDefaultsJson": "JSON Tetapan Lalai Pembangun",
     "copyFailed": "Tidak dapat menyalin\nPilih teks dan salin sendiri."
   },
   "zoom": {
@@ -646,10 +643,11 @@
     "failedHint": "Sila cuba lagi sebentar lagi.",
     "tryAgain": "Cuba lagi",
     "errors": {
-      "httpFailure": "Penjanaan PDF gagal (HTTP {status})",
-      "invalidJson": "Pelayan mengembalikan JSON yang tidak sah dan bukannya PDF",
-      "noPdf": "Respons pelayan tidak mengandungi PDF",
-      "notPdf": "Respons pelayan bukan PDF (jenis kandungan: {type})"
+      "httpFailure": "Pelayan laporan tidak dapat membuat PDF (HTTP {status})",
+      "notPdf": "Pelayan laporan tidak menghantar PDF (jenis kandungan: {type})",
+      "notOnServer": "Templat ini belum ada pada pelayan laporan, jadi ia tidak boleh dipratonton. Bukanya dari halaman Templat dan cuba lagi.",
+      "notSaved": "Templat tidak dapat disimpan pada pelayan laporan, jadi PDF akan tertinggal perubahan terkini anda. Cuba Pratonton PDF sekali lagi sebentar nanti.",
+      "noProject": "Templat ini memerlukan projek untuk membuat PDF. Pilih satu dalam kotak di sebelah nama templat."
     },
     "tables": {
       "readOnly": "Baca sahaja — edit dalam pereka",
@@ -666,11 +664,6 @@
       "total": "Jumlah",
       "printsNothing": "tidak dicetak sehingga ini dibetulkan."
     }
-  },
-  "previewServerSettings": {
-    "title": "Tetapan Pelayan Pratonton",
-    "serverUrl": "URL Pelayan",
-    "sourceInfo": "Alamat kod sumber pelayan pratonton:"
   },
   "displayRules": {
     "ruleType": "Peraturan Paparan",
@@ -763,8 +756,7 @@
     "close": "Tutup"
   },
   "notifications": {
-    "fileSavedSuccess": "Fail berjaya disimpan",
-    "fileSaveFailed": "Tidak dapat menyimpan fail\nSila cuba lagi.",
+    "fileSavedSuccess": "Templat disimpan",
     "jrxmlCopiedSuccess": "Kandungan JRXML disalin ke papan keratan",
     "jrxmlCopyFailed": "Tidak dapat menyalin\nSila pilih teks dan salin sendiri.",
     "jrxmlEditSaved": "Suntingan JRXML disimpan, antara muka dikemas kini",
@@ -836,12 +828,17 @@
     "notifications": "Pemberitahuan",
     "signOut": "Log keluar",
     "templates": "Templat",
-    "myTemplates": "Templat saya",
     "activity": "Aktiviti",
     "allSystemsOperational": "Semua sistem beroperasi",
     "closeNavigation": "Tutup navigasi",
     "accountMenu": "Menu akaun",
-    "defaultWorkspace": "Ruang kerja CDP anda"
+    "defaultWorkspace": "Ruang kerja CDP anda",
+    "templateSearch": {
+      "noMatch": "Tiada templat yang sepadan dengan \"{words}\"",
+      "failed": "Templat tidak dapat dicari. Cuba lagi sebentar lagi.",
+      "more": "Menunjukkan {shown} yang pertama daripada {total}. Taip lebih banyak nama untuk mengecilkannya.",
+      "tooShort": "Taip sekurang-kurangnya {n} huruf untuk mencari."
+    }
   },
   "home": {
     "eyebrow": "Ruang kerja templat",
@@ -855,15 +852,12 @@
     "subtitle": "Cipta, susun dan urus templat laporan anda.",
     "recentTemplates": "Templat terkini",
     "viewAll": "Lihat semua",
-    "createNewTemplate": "Cipta templat baharu",
-    "createNewTemplateHint": "Mula dengan templat kosong",
     "moreOptions": "Lagi pilihan",
     "createdBy": "Dicipta oleh {name}",
     "sharedWithYou": "Dikongsi dengan anda",
     "recentlyAccessed": "Diakses baru-baru ini",
     "noSharedTemplates": "Belum ada templat dikongsi",
     "noSharedTemplatesHint": "Templat yang dikongsi dengan anda akan dipaparkan di sini.",
-    "copyName": "{name} (salinan)",
     "edited": {
       "today": "Disunting hari ini pada {time}",
       "yesterday": "Disunting semalam",
@@ -871,23 +865,14 @@
     },
     "menu": {
       "open": "Buka",
-      "rename": "Namakan semula",
       "duplicate": "Gandakan",
       "delete": "Padam"
     },
-    "renameTitle": "Namakan semula templat",
-    "renameMessage": "Taip nama baharu untuk templat ini.",
     "deleteTitle": "Padam templat",
-    "deleteMessage": "Padam \"{name}\"? Tindakan ini tidak boleh dibatalkan.",
-    "openTitle": "Buka templat",
-    "openMessage": "Buka \"{name}\" dalam pereka untuk menyuntingnya?",
-    "duplicateTitle": "Gandakan templat",
-    "duplicateMessage": "Buat salinan \"{name}\"? Salinan itu ditambah ke templat anda."
+    "deleteMessage": "Padam \"{name}\"? Tindakan ini tidak boleh dibatalkan."
   },
   "pages": {
     "workspace": "Ruang Kerja",
-    "myTemplates": "Templat Saya",
-    "myTemplatesDescription": "Lihat dan urus templat yang telah anda cipta atau simpan.",
     "activity": "Aktiviti",
     "activityDescription": "Lihat aktiviti dan perubahan terkini di seluruh ruang kerja anda."
   },
@@ -897,14 +882,15 @@
     "saving": "Menyimpan...",
     "saveFailed": "Gagal disimpan",
     "saved": "Disimpan",
-    "savingTitle": "Menyimpan perubahan...",
-    "saveFailedTitle": "Simpan automatik gagal",
-    "savedTitle": "Semua perubahan disimpan secara automatik",
+    "savingTitle": "Menyimpan ke pelayan laporan sejurus selepas anda berhenti menyunting...",
+    "saveFailedTitle": "Tidak dapat menyimpan ke pelayan laporan. Klik untuk cuba lagi.",
+    "savedTitle": "Semua perubahan disimpan di pelayan laporan",
     "addNewPage": "Tambah Halaman Baharu",
     "bandHeight": "Ketinggian {bandName}: {height}px",
     "pageButton": "Halaman",
     "more": "Alatan lain",
-    "zoom": "Zum"
+    "zoom": "Zum",
+    "nameTooLong": "Nama terlalu panjang\nNama templat boleh mempunyai paling banyak {max} aksara; selebihnya telah dipotong."
   },
   "help": {
     "menu": {
@@ -939,28 +925,16 @@
       "home": {
         "welcomeTitle": "Selamat datang ke Report Studio",
         "welcomeText": "Di sinilah anda membuat templat untuk laporan projek anda. Mahu lihat sekeliling selama seminit?",
-        "createTitle": "Mulakan templat baharu",
-        "createText": "Klik Cipta templat baharu untuk memulakannya. Anda mereka bentuknya pada halaman, seperti dokumen; setiap kali ia dijalankan ia menghasilkan laporan.",
+        "createTitle": "Cipta templat",
+        "createText": "Klik Cipta templat: templat baharu dibuka dalam pereka dengan namanya sendiri (Untitled Template, 2, 3…). Klik namanya di bahagian atas untuk menamakannya semula.",
         "navTitle": "Cari jalan anda",
-        "navText": "Templat menunjukkan templat yang boleh anda gunakan, Templat saya templat yang anda buat, dan Aktiviti perkara yang berubah baru-baru ini.",
+        "navText": "Templat menunjukkan templat pelayan laporan: templat lalai dan templat organisasi anda sendiri.",
         "searchTitle": "Cari templat",
-        "searchText": "Taip sebahagian nama templat dan tekan Enter: Templat saya menunjukkan yang sepadan.",
+        "searchText": "Taip sebahagian nama templat: templat yang sepadan dipaparkan dalam senarai di bawah kotak. Klik satu untuk membukanya.",
         "accountTitle": "Akaun anda",
-        "accountText": "Klik huruf awal nama anda untuk menukar bahasa (English atau Bahasa Melayu) atau untuk log keluar.",
+        "accountText": "Gambar anda membuka menu akaun: tukar bahasa, buka Tetapan Lalai (kertas, jidar, fon dan bahagian yang digunakan oleh setiap templat baharu) atau log keluar.",
         "helpTitle": "Bantuan sentiasa ada",
         "helpText": "Klik Bantuan bila-bila masa untuk mengikuti lawatan ini semula atau membaca Panduan ringkas."
-      },
-      "templates": {
-        "listTitle": "Templat anda",
-        "listText": "Setiap templat yang anda buat. Klik satu untuk membukanya dalam pereka.",
-        "viewTitle": "Kad atau senarai",
-        "viewText": "Tukar antara kad bergambar dan senarai dengan tarikh, seperti folder fail.",
-        "orderTitle": "Susunannya",
-        "orderText": "Pilih susunan kad di sini. Dalam senarai, klik tajuk lajur untuk mengisih, dan pilih berapa baris yang ditunjukkan setiap halaman.",
-        "actionsTitle": "Buka, namakan semula, salin atau padam",
-        "actionsText": "Tiga titik pada kad, atau butang di hujung baris, membuka, menamakan semula, menyalin atau memadam templat. Setiap satu bertanya dahulu sebelum bertindak.",
-        "searchTitle": "Cari templat",
-        "searchText": "Taip sebahagian nama di sini: senarai hanya menunjukkan templat yang sepadan."
       },
       "designer": {
         "welcomeTitle": "Selamat datang ke pereka templat",
@@ -972,13 +946,15 @@
         "pageTitle": "Halaman anda",
         "pageText": "Inilah yang akan dicetak. Klik sesuatu untuk memilihnya, seret untuk mengalihkannya, dan klik dua kali pada teks untuk menaip.",
         "panelTitle": "Ubah rupanya",
-        "panelText": "Apabila sesuatu dipilih, saiz, warna dan teksnya ada di sini; apabila tiada apa-apa dipilih, tetapan seluruh templat. Tab Pembantu AI boleh mereka bentuk untuk anda.",
+        "panelText": "Apabila sesuatu dipilih, saiz, warna dan teksnya ada di sini; apabila tiada apa-apa dipilih, tetapan seluruh templat.",
         "pagesTitle": "Tambah halaman",
         "pagesText": "Klik Halaman untuk menambah halaman lain, halaman kulit atau isi kandungan.",
         "previewTitle": "Lihat hasilnya",
         "previewText": "Klik Pratonton PDF untuk melihat dengan tepat apa yang akan dicetak. Kerja anda disimpan sendiri semasa anda bekerja.",
         "helpTitle": "Perlukan bantuan lagi?",
-        "helpText": "Klik Bantuan bila-bila masa untuk lawatan ini, Panduan ringkas, pintasan papan kekunci dan tetikus dan bantuan untuk setiap elemen."
+        "helpText": "Klik Bantuan bila-bila masa untuk lawatan ini, Panduan ringkas, pintasan papan kekunci dan tetikus dan bantuan untuk setiap elemen.",
+        "accountTitle": "Tetapan Lalai anda",
+        "accountText": "Gambar anda di kanan atas membuka Tetapan Lalai: kertas, jidar, fon dan bahagian yang digunakan oleh setiap templat baharu. Untuk mengubah templat ini sahaja, gunakan tab Tetapan di sebelah kanan."
       }
     },
     "guide": {
@@ -1002,8 +978,8 @@
         "pagesText": "Gunakan Halaman di bahagian atas untuk menambah halaman lain, halaman kulit atau isi kandungan.",
         "aiTitle": "Biar AI membantu",
         "aiText": "Buka tab Pembantu AI di sebelah kanan dan tulis apa yang anda perlukan, contohnya “Buat halaman kulit untuk laporan bulan Mac”.",
-        "previewTitle": "Semak dan muat turun",
-        "previewText": "Klik Pratonton PDF untuk melihat dengan tepat rupa laporan. Muat turun menyimpan salinan templat pada komputer anda."
+        "previewTitle": "Semak PDF",
+        "previewText": "Klik Pratonton PDF untuk melihat dengan tepat rupa laporan. Templat disimpan pada pelayan laporan dahulu, jadi PDF menunjukkan perubahan terkini anda."
       },
       "tipsTitle": "Perlu diketahui",
       "tips": {
@@ -1013,8 +989,8 @@
         "nudge": "Tahan Shift dan tekan kekunci anak panah untuk mengalihkan item yang dipilih sedikit.",
         "dragScroll": "Untuk mengalihkan item ke halaman lain, seret item itu dan putar roda tetikus, atau tahan dekat tepi atas atau bawah: halaman akan menatal dan item itu ikut bersama.",
         "undo": "Tersilap? Tekan Ctrl+Z (⌘+Z pada Mac) untuk membuat asal.",
-        "saved": "Kerja anda disimpan sendiri dalam pelayar ini semasa anda bekerja.",
-        "open": "Templat anda ada di halaman utama dan dalam Templat saya: klik satu untuk membukanya. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat lain atau fail .jrxml dari komputer anda.",
+        "saved": "Templat anda disimpan di pelayan laporan sejurus selepas anda berhenti menyunting, dan serta-merta apabila anda meninggalkannya. Tekan Ctrl+S (⌘+S pada Mac) untuk menyimpan dengan segera.",
+        "open": "Templat anda ada di halaman Templat (menu di sebelah kiri). Kotak carian di bahagian atas mencari templat mengikut nama.",
         "keys": "Lebih banyak kekunci yang menjimatkan klik ada dalam tab Pintasan papan kekunci di atas."
       },
       "tourHint": "Baru di sini? Lawatan seminit menunjukkan di mana letaknya semua perkara.",
@@ -1064,18 +1040,20 @@
       "cellPrevious": "Sel sebelumnya",
       "cellClear": "Kosongkan sel yang dipilih",
       "tableClose": "Tutup sel; tekan lagi untuk menutup jadual",
-      "crop": "Pilih gambar, atau pangkasnya",
+      "crop": "Pilih gambar (daripada foto projek atau komputer anda), atau pangkasnya",
       "cropApply": "Simpan pangkasan",
       "cropCancel": "Batalkan pangkasan",
+      "pictureUsePhoto": "Pilih gambar: terus gunakan foto projek (klik dua kali padanya)",
+      "pictureChooserClose": "Tutup tetingkap Pilih gambar",
       "zoomIn": "Zum masuk",
       "zoomOut": "Zum keluar",
       "zoomWheel": "Zum masuk atau keluar",
       "resetZoom": "Kembali ke zum biasa",
-      "toggleBottomPanel": "Tunjuk atau sembunyi Tetapan Lalai",
-      "panelDown": "Turunkan semula Tetapan Lalai yang setinggi penuh",
+      "toggleBottomPanel": "Tunjuk atau sembunyi panel pembangun (Kandungan JRXML, Jalur Laporan, JSON tetapan)",
+      "panelDown": "Turunkan semula panel pembangun yang setinggi penuh",
       "newTemplate": "Mulakan templat baharu",
       "openTemplate": "Buka templat (milik anda atau fail dari komputer anda)",
-      "save": "Simpan sekarang (ia juga disimpan sendiri)",
+      "save": "Simpan ke pelayan laporan sekarang (ia juga disimpan sendiri)",
       "aiSend": "Hantar mesej anda",
       "aiNewLine": "Baris baharu dalam mesej anda",
       "aiClear": "Kosongkan perbualan (semasa tab Pembantu AI dibuka)",
@@ -1094,7 +1072,7 @@
       "hide": "Sembunyikan petua ini",
       "report": "Tiada apa-apa dipilih, jadi inilah Tetapan Templat bagi templat ini: kertas, jidar, fon dan bahagian halaman. Klik sesuatu pada halaman untuk mengubahnya.",
       "textField": "Teks pada halaman. Klik dua kali padanya di halaman untuk menaip. Ubah fon, saiz dan warnanya di sini.",
-      "image": "Gambar. Lepaskan fail gambar dari komputer anda ke atasnya, atau pilih satu di sini. Pilih bentuk, seperti Bulatan atau Bulat sedikit, dalam Tetapan Asas.",
+      "image": "Gambar. Klik dua kali padanya, atau gunakan Pilih gambar di sini, untuk memilih salah satu foto projek atau fail dari komputer anda. Pilih bentuk, seperti Bulatan atau Bulat sedikit, dalam Tetapan Asas.",
       "line": "Garis untuk memisahkan bahagian halaman. Ubah warna dan ketebalannya di sini.",
       "rectangle": "Bentuk untuk jalur, garisan dan latar. Untuk menyimpan teks atau gambar bersama pada panel berwarna, gunakan Kotak.",
       "ellipse": "Bulatan atau bujur. Untuk status, pilih hijau, kuning jingga atau merah dalam Tetapan Asas.",
@@ -1107,6 +1085,7 @@
       "pageNumber": "Nombor halaman yang diisi sendiri. Pilih rupanya dan halaman mana yang mendapat nombor.",
       "dateTime": "Tarikh yang diisi sendiri, seperti hari laporan dicetak. Pilih tarikh yang mana dan rupanya.",
       "pageBorder": "Sempadan di sekeliling setiap halaman. Ubah garis, warna dan bucunya di sini.",
+      "watermark": "Teks pudar atau gambar pudar di belakang setiap halaman. Pilih apa yang ditunjukkan dan sekuat mana ia dicetak. Untuk kembali kepadanya kemudian, buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air.",
       "sectionHeading": "Tajuk yang memulakan bahagian. Nombornya dikira sendiri, dan ia dipaparkan dalam isi kandungan.",
       "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan.",
       "location": "Peta dengan pin dan alamat. Taip tempat di bawah, salin daripada projek, atau klik peta kecil untuk meletakkan pin di situ.",
@@ -1128,7 +1107,9 @@
       "chartTitle": "Menyediakan carta",
       "chartText": "Klik dua kali pada carta untuk memilih data yang ditunjukkannya.",
       "locationTitle": "Peta dan alamat",
-      "locationText": "Taip tempat di sebelah kanan, atau seret Lokasi dari Data Laporan ke atasnya. Atau klik peta kecil di sebelah kanan untuk meletakkan pin di situ."
+      "locationText": "Taip tempat di sebelah kanan, atau seret Lokasi dari Data Laporan ke atasnya. Atau klik peta kecil di sebelah kanan untuk meletakkan pin di situ.",
+      "watermarkTitle": "Di belakang setiap halaman",
+      "watermarkText": "Tera air tidak boleh diklik pada halaman, jadi ia tidak pernah mengganggu. Untuk mengubahnya kemudian, buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air."
     },
     "guides": {
       "title": "Panduan langkah demi langkah",
@@ -1287,9 +1268,9 @@
         "aiPrompt": "Tambah ruang gambar untuk foto projek.",
         "steps": {
           "addTitle": "Tambah ruang gambar",
-          "addText": "Klik Imej dalam Pustaka Elemen.",
+          "addText": "Klik Imej dalam Pustaka Elemen dan pilih Foto projek atau Dari komputer saya.",
           "pictureTitle": "Letakkan gambar",
-          "pictureText": "Lepaskan fail gambar dari komputer anda ke atas ruang itu, atau klik dan pilih satu di sebelah kanan.",
+          "pictureText": "Klik dua kali pada ruang itu dan pilih salah satu foto projek, atau gambar dari komputer anda. Anda juga boleh melepaskan fail gambar ke atasnya.",
           "settingsTitle": "Pilih bentuknya",
           "settingsText": "Klik gambar itu. Di sebelah kanan anda boleh membulatkan bucunya atau menjadikannya bulatan.",
           "previewTitle": "Semak",
@@ -1385,6 +1366,19 @@
           "addText": "Klik Sempadan Halaman dalam Pustaka Elemen. Satu templat hanya boleh ada satu.",
           "settingsTitle": "Pilih rupanya",
           "settingsText": "Klik garisan sempadan pada halaman. Garisan dan bucunya ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "watermark": {
+        "title": "Tambah tera air",
+        "intro": "Perkataan samar seperti DRAF, atau logo pudar, di belakang setiap halaman.",
+        "aiPrompt": "Tambah tera air DRAF berwarna kelabu cerah pada setiap halaman.",
+        "steps": {
+          "addTitle": "Tambah tera air",
+          "addText": "Klik Tera Air dalam Pustaka Elemen, atau Tambah tera air dalam menu ⋯ di atas halaman. Ia diletakkan di belakang setiap halaman.",
+          "settingsTitle": "Pilih apa yang dipaparkan",
+          "settingsText": "Buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air, kemudian taip perkataannya atau pilih gambar dan tetapkan sekuat mana ia dicetak.",
           "previewTitle": "Semak",
           "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
         }
@@ -1605,6 +1599,7 @@
       "create_date": "Tambah tarikh",
       "create_location": "Tambah lokasi",
       "create_page_border": "Tambah sempadan halaman",
+      "create_watermark": "Tambah tera air",
       "create_preset": "Tambah elemen siap",
       "update_element": "Ubah elemen",
       "move_element": "Alih elemen",
@@ -1879,7 +1874,8 @@
     "madeShorter": "Dipendekkan supaya muat\nIa lebih tinggi daripada yang dibenarkan oleh {band}.",
     "tooTall": "Terlalu tinggi untuk {band}\nKecilkannya, atau pisahkannya kepada dua bahagian.",
     "movedIn": "Dikekalkan di dalam halaman\nIa melepasi tepi halaman.",
-    "keptInside": "Dikekalkan di dalam {band}\nNilai itu akan melepasi tepinya, jadi ia ditetapkan kepada {value}."
+    "keptInside": "Dikekalkan di dalam {band}\nNilai itu akan melepasi tepinya, jadi ia ditetapkan kepada {value}.",
+    "keptMinimum": "Dikekalkan pada {value} px\nKandungannya memerlukan sekurang-kurangnya ruang ini, jadi ia ditetapkan kepada {value}."
   },
   "customTable": {
     "placeholderHeader": "Tajuk {n}",
@@ -2270,7 +2266,7 @@
     },
     "data": "Data",
     "dataFrom": "{source} · {project}",
-    "dataHint": "Seret sumber dari Data Laporan ke carta, atau sediakannya di sini. Sehingga itu carta menunjukkan nombor contoh dan tidak dicetak.",
+    "dataHint": "Seret jadual dari Data Laporan ke carta, atau sediakannya di sini. Sehingga itu carta menunjukkan nombor contoh dan tidak dicetak.",
     "setUpData": "Sediakan data",
     "editData": "Edit data",
     "noData": "Tiada data",
@@ -2295,29 +2291,28 @@
       }
     },
     "measures": {
-      "countOf": "Bilangan",
+      "countOf": "Rekod",
       "sumOf": "Jumlah {column}",
       "avgOf": "Purata {column}",
-      "minOf": "{column} terendah",
-      "maxOf": "{column} tertinggi"
+      "minOf": "Min {column}",
+      "maxOf": "Maks {column}"
     },
     "aggregations": {
-      "count": "Kira baris",
       "sum": "Jumlah",
       "avg": "Purata",
-      "min": "Terendah",
-      "max": "Tertinggi"
+      "min": "Min",
+      "max": "Maks"
     },
     "granularities": {
-      "day": "Mengikut hari",
-      "week": "Mengikut minggu",
-      "month": "Mengikut bulan",
-      "quarter": "Mengikut suku tahun",
-      "year": "Mengikut tahun"
+      "day": "Hari",
+      "week": "Minggu",
+      "month": "Bulan",
+      "quarter": "Suku Tahun",
+      "year": "Tahun"
     },
     "states": {
       "sample": "Data contoh",
-      "sampleHint": "Nombor contoh: seret sumber dari Data Laporan ke carta, atau klik dua kali untuk menyediakan datanya. Tidak dicetak sehingga itu.",
+      "sampleHint": "Nombor contoh: seret jadual dari Data Laporan ke carta, atau klik dua kali untuk menyediakan datanya. Tidak dicetak sehingga itu.",
       "incomplete": "Lengkapkan tetapan",
       "incompleteHint": "Pilih apa yang ditunjukkan oleh carta (klik dua kali). Tidak dicetak sehingga itu.",
       "loading": "Memuatkan…",
@@ -2328,33 +2323,54 @@
     "config": {
       "title": "Data carta",
       "replacesData": "Menggantikan data carta daripada {source}.",
-      "whatToShow": "Apa yang ditunjukkan",
-      "categories": "Kategori",
-      "overTime": "Mengikut masa",
-      "groups": "Kumpulan",
-      "items": "Item dalam setiap kumpulan",
-      "chooseColumn": "Pilih lajur",
       "otherColumns": "Lajur lain (banyak nilai berbeza)",
       "cantGroup": "{name} (tidak boleh dikumpulkan)",
-      "groupDatesBy": "Kumpulkan tarikh",
-      "noTextColumns": "Sumber ini tiada lajur untuk dikumpulkan.",
-      "noDateColumns": "Sumber ini tiada lajur tarikh. Carta bar boleh membandingkan lajur lain.",
-      "value": "Nombor yang ditunjukkan",
-      "series": "Garis atau bar",
+      "noTextColumns": "Jadual ini tiada lajur untuk dikumpulkan.",
+      "noDateColumns": "Jadual ini tiada lajur tarikh. Carta bar boleh membandingkan lajur lain.",
       "calculation": "Pengiraan",
-      "ofColumn": "Lajur",
-      "splitBy": "Satu bagi setiap",
-      "noSplit": "(tiada)",
-      "addSeries": "Tambah lagi",
-      "removeSeries": "Buang",
-      "gaugeMax": "Skala sehingga",
-      "automatic": "Automatik",
-      "stackBars": "Tindankan bar",
-      "stackAreas": "Tindankan kawasan",
-      "filters": "Baris yang dikira",
       "basedOn": "Berdasarkan 1 baris | Berdasarkan {count} baris",
       "incomplete": "Pilih apa yang ditunjukkan oleh carta.",
       "manyCategories": "{count} kategori: setiap satu dicetak, jadi carta mungkin sesak di atas kertas. Penapis, kumpulan tarikh yang lebih besar (mengikut bulan atau tahun) atau carta yang lebih lebar membantu."
+    },
+    "panel": {
+      "slots": {
+        "xAxis": "Paksi-X",
+        "categoryAxis": "Paksi Kategori",
+        "category": "Kategori",
+        "value": "Nilai",
+        "level1": "Tahap 1",
+        "level2": "Tahap 2"
+      },
+      "granularity": "Ketepatan masa",
+      "numberOfRecords": "Bilangan rekod",
+      "blockTerms": {
+        "bar": "Bar",
+        "line": "Garis",
+        "area": "Kawasan"
+      },
+      "addBlock": "Tambah {term}",
+      "splitBy": "Pisahkan Mengikut",
+      "optional": "pilihan",
+      "noSplit": "— Tiada —",
+      "layout": "Susun Atur",
+      "stacked": "Bertindan",
+      "grouped": "Berkumpulan",
+      "showAs": "Papar sebagai",
+      "bar": "Bar",
+      "line": "Garis",
+      "customizeColors": "Sesuaikan warna",
+      "hideColors": "Sembunyikan warna",
+      "resetColors": "Set semula ke warna asal",
+      "numberColor": "Warna nombor",
+      "gaugeRange": "Julat tolok",
+      "rangeAuto": "Automatik",
+      "rangeManual": "Manual",
+      "rangeMin": "Minimum",
+      "rangeMax": "Maksimum",
+      "showLegend": "Tunjukkan legenda",
+      "widgetTitle": "Tajuk widget",
+      "widgetDescription": "Penerangan widget",
+      "widgetDescriptionPlaceholder": "Tambah nota ringkas tentang widget ini"
     }
   },
   "dataTable": {
@@ -2399,7 +2415,7 @@
       "tableName": "Nama jadual",
       "columnCount": "1 lajur | {count} lajur",
       "editData": "Edit data",
-      "emptyHint": "Seret sumber dari Data Jadual ke jadual ini, atau pilih satu di sini.",
+      "emptyHint": "Seret jadual dari Data Laporan ke jadual ini, atau pilih satu di sini.",
       "chooseData": "Pilih data",
       "look": "Rupa",
       "headerHeight": "Tinggi pengepala",
@@ -2412,8 +2428,8 @@
       "project": "Projek",
       "chooseProject": "Pilih projek",
       "noProjects": "Pilih projek di bahagian atas halaman dahulu.",
-      "source": "Sumber",
-      "chooseSource": "Pilih sumber",
+      "source": "Jadual",
+      "chooseSource": "Pilih jadual",
       "replacesData": "Guna akan menggantikan data semasa jadual ini ({source}).",
       "sourceOption": "{name} ({count} baris)",
       "columns": "Lajur",
@@ -2430,7 +2446,7 @@
       "rowsNote": "Tetapan ini digunakan pada jadual di halaman dan dalam laporan yang dicetak, bukan hanya pratonton ini.",
       "showTotals": "Tambah baris jumlah",
       "preview": "Pratonton",
-      "pickSourceFirst": "Pilih sumber untuk melihat datanya",
+      "pickSourceFirst": "Pilih jadual untuk melihat datanya",
       "rowCount": "1 baris | {count} baris",
       "needColumn": "Pilih sekurang-kurangnya satu lajur",
       "apply": "Guna",
@@ -2439,11 +2455,9 @@
     "filter": {
       "containsChip": "mengandungi “{words}”",
       "remove": "Buang",
-      "search": "Cari {column}",
+      "search": "Cari {column}…",
       "selectAll": "Pilih semua",
-      "clear": "Kosongkan",
       "clearAll": "Kosongkan semua",
-      "noMatchingValues": "Tiada nilai sepadan dengan carian anda",
       "min": "Min",
       "max": "Maks",
       "from": "Dari",
@@ -2454,8 +2468,6 @@
       "onOrAfter": "Dari {value}",
       "onOrBefore": "Sehingga {value}",
       "moreValues": "{values} +{count}",
-      "matchCount": "1 baris sepadan | {count} baris sepadan",
-      "movingRangeHint": "Hari ini iaitu {from} hingga {to}.",
       "periods": {
         "thisMonth": "Bulan ini",
         "lastMonth": "Bulan lepas",
@@ -2463,14 +2475,15 @@
         "thisYear": "Tahun ini",
         "last30Days": "30 hari lepas"
       },
-      "filtersTitle": "Tapis",
-      "fieldsShown": "Medan yang ditunjukkan dalam penapis ini",
+      "filtersTitle": "Penapis",
       "searchFields": "Cari medan…",
       "noFieldsMatch": "Tiada medan sepadan dengan “{words}”.",
-      "noFields": "Tiada medan ditunjukkan. Pilih medan untuk ditapis dengan butang di atas.",
       "typeToSearch": "Taip untuk mencari {column}…",
       "all": "Semua",
-      "clearAllHint": "Buang semua penapis"
+      "optional": "pilihan",
+      "addFilter": "Tambah penapis",
+      "removeFilter": "Buang penapis",
+      "noOptions": "Tiada pilihan dijumpai"
     },
     "sort": {
       "text": {
@@ -2596,6 +2609,78 @@
       "sortedOff": "Diisih: {now}. Klik untuk kembali ke susunan asal"
     }
   },
+  "reportBands": {
+    "draft": "Draf",
+    "draftNote": "Dibina di sini daripada reka bentuk. Pelayan laporan akan menyimpannya sebagai laporan Jmix templat apabila templat disimpan di sana (belum lagi).",
+    "views": {
+      "tree": "Jalur",
+      "sent": "Dihantar",
+      "stored": "Disimpan"
+    },
+    "viewHints": {
+      "tree": "Setiap jalur memuatkan satu bahagian data templat apabila laporan dijalankan.",
+      "sent": "Dihantar sebagai \"bands\" bersama nama dan JRXML templat apabila ia disimpan (PUT /v2/api/reporter/templates/{id}).",
+      "stored": "Laporan yang disimpan oleh pelayan dalam REPORT_REPORT.xml (pelayan memberikan ID sendiri)."
+    },
+    "copied": "Disalin",
+    "parametersTitle": "Parameter jalanan",
+    "templateTitle": "Templat",
+    "templateLine": "{code} · PDF · {className} (kelas tersuai)",
+    "empty": "Belum ada data projek\nSeret jadual, carta atau butiran projek dari Data Laporan: jalurnya ditunjukkan di sini.",
+    "today": "hari ini",
+    "noProject": "tiada projek dipilih",
+    "groovy": "Groovy",
+    "dataSet": "Set data (Groovy)",
+    "request": "Permintaan (jsonSourceText)",
+    "kinds": {
+      "projectValues": "Butiran projek",
+      "entityRows": "Baris jadual",
+      "projectList": "Senarai projek",
+      "aggregate": "Nombor carta",
+      "map": "Peta dan alamat"
+    },
+    "fills": {
+      "parameters": "mengisi {count} parameter | mengisi {count} parameter",
+      "table": "mengisi jadualnya",
+      "chart": "mengisi gambarnya",
+      "map": "mengisi peta dan alamatnya"
+    },
+    "fields": {
+      "name": "Nama jalur",
+      "kind": "Jenis",
+      "source": "Sumber",
+      "projectProperty": "Projek melalui",
+      "fetchPlan": "Pelan ambil",
+      "columns": "Medan",
+      "filters": "Penapis",
+      "noFilters": "Tiada (setiap baris projek)",
+      "sort": "Isih",
+      "sortAsc": "{property}, rendah ke tinggi",
+      "sortDesc": "{property}, tinggi ke rendah",
+      "maxRows": "Sehingga",
+      "maxRowsValue": "{count} baris",
+      "list": "Senarai pada projek",
+      "single": "satu rekod",
+      "chartType": "Jenis carta",
+      "requests": "Permintaan",
+      "picture": "Gambar",
+      "pictureSize": "{width} × {height} px",
+      "coordinates": "Koordinat",
+      "addressLines": "Baris alamat",
+      "zoom": "Zum",
+      "linked": "rekod terpaut",
+      "userDefined": "medan takrifan pengguna {code}"
+    },
+    "labels": {
+      "project": "Butiran projek",
+      "chart": "Carta",
+      "map": "Lokasi"
+    },
+    "parameters": {
+      "project": "Projek",
+      "reportDate": "Tarikh laporan"
+    }
+  },
   "reportData": {
     "title": "Data Laporan",
     "reload": "Muat semula projek dan data",
@@ -2698,7 +2783,42 @@
       "tableNotOnSpecialPage": "Jadual tidak boleh diletakkan pada halaman kulit atau kandungan."
     },
     "dragDate": "Seret ke halaman: menunjukkan tarikh projek ini dalam rupa yang anda pilih, dan mengikut projek templat",
-    "chartFromSource": "Carta daripada jadual ini: seret ikon ini ke halaman, atau klik untuk menambahnya"
+    "chartFromSource": "Carta daripada jadual ini: seret ikon ini ke halaman, atau klik untuk menambahnya",
+    "tableGroups": {
+      "projectInformation": "MAKLUMAT PROJEK",
+      "contractManagement": "PENGURUSAN KONTRAK",
+      "procurementManagement": "PENGURUSAN PEROLEHAN",
+      "complianceManagement": "PENGURUSAN PEMATUHAN",
+      "sheManagement": "PENGURUSAN SHE",
+      "riskManagement": "PENGURUSAN RISIKO",
+      "qsheManagement": "PENGURUSAN QSHE",
+      "qualityManagement": "PENGURUSAN KUALITI",
+      "issueManagement": "PENGURUSAN ISU",
+      "otherTables": "JADUAL LAIN"
+    },
+    "tableSections": {
+      "contractMonitoring": "Pemantauan Kontrak",
+      "qsheAudit": "Audit/Penilaian QSHE"
+    },
+    "tableNames": {
+      "project": "Projek",
+      "progressFiles": "Fail Kemajuan Projek",
+      "contract": "Kontrak",
+      "payment": "Bayaran",
+      "variationOrder": "Perintah Variasi",
+      "finalAccount": "Akaun Akhir",
+      "lad": "LAD",
+      "eot": "Lanjutan Masa",
+      "procurementRegister": "Daftar Perolehan",
+      "complianceRegister": "Daftar Pematuhan",
+      "incidentRegister": "Daftar Insiden",
+      "riskRegister": "Daftar Risiko Projek",
+      "projectAudit": "Audit Projek",
+      "qualityStandard": "Piawaian Kualiti",
+      "safetyHealth": "Keselamatan & Kesihatan",
+      "qaqcRegister": "Daftar QA/QC",
+      "issueRegister": "Daftar Isu"
+    }
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3303,7 +3423,7 @@
       },
       "file": {
         "title": "Fail",
-        "text": "Baharu memulakan templat. Buka membuka salah satu templat anda, atau fail .jrxml dari komputer anda."
+        "text": "Baharu mencipta templat baharu di pelayan laporan. Buka membuka templat dari pelayan laporan, atau fail .jrxml dari komputer anda."
       },
       "undo": {
         "title": "Buat Asal",
@@ -3334,8 +3454,8 @@
         "text": "Membesarkan atau mengecilkan halaman pada skrin anda; saiz cetakan tidak pernah berubah. Gunakan − dan +, taip saiz, atau pilih satu daripada senarai."
       },
       "bottomPanel": {
-        "title": "Tetapan Lalai",
-        "text": "Membuka Tetapan Lalai di bahagian bawah: kertas, jidar, fon dan bahagian halaman yang digunakan oleh setiap templat baharu."
+        "title": "Panel pembangun",
+        "text": "Membuka panel pembangun di bahagian bawah: Kandungan JRXML, Jalur Laporan dan JSON tetapan. Hanya ditunjukkan pada pelayan pembangunan."
       },
       "snap": {
         "title": "Jajaran & grid",
@@ -3378,14 +3498,14 @@
       },
       "pageSettings": {
         "title": "Tetapan Lalai",
-        "what": "Apa yang digunakan oleh setiap templat baharu: kertas, jidar, fon, bahagian halaman dan ketinggian bahagian. Bukanya dengan butang Tetapan Lalai di bahagian atas (Ctrl+B).",
+        "what": "Apa yang digunakan oleh setiap templat baharu: kertas, jidar, fon, bahagian halaman dan ketinggian bahagian. Bukanya dari menu akaun anda (gambar anda di kanan atas) → Tetapan Lalai.",
         "work": [
           "Kertas, Jidar Halaman, Fon, Bahagian Halaman dan Ketinggian Bahagian berfungsi seperti dalam Tetapan Templat, tetapi hanya untuk templat yang anda buat mulai sekarang.",
-          "Guna pada templat ini menyalin salah satunya ke dalam templat yang sedang dibuka (satu langkah buat asal).",
-          "Asal pada kad (atau Set semula semua ke asal di bahagian atas) mengembalikan tetapan asal aplikasi: A4 potret, jidar 20 px dan bahagian biasa."
+          "Asal pada kad (atau Set semula semua ke asal di bahagian atas) mengembalikan tetapan asal aplikasi: A4 potret, jidar 20 px dan bahagian biasa.",
+          "Untuk menggunakannya dalam templat sedia ada, bukanya dan klik Guna lalai pada kad dalam Tetapan Templat."
         ],
         "good": [
-          "Ia disimpan dalam pelayar ini: komputer lain bermula dengan tetapan asal.",
+          "Ia disimpan dengan akaun anda, jadi setiap komputer yang anda log masuk bermula dengannya.",
           "Untuk mengubah templat yang sedang dibuka sahaja, gunakan Tetapan Templat."
         ]
       },
@@ -3439,10 +3559,10 @@
         "title": "Imej",
         "what": "Gambar atau logo.",
         "when": "Untuk foto, logo, pelan dan tandatangan.",
-        "add": "Klik Imej dalam Pustaka Elemen, atau seret ke tempat yang anda mahu.",
+        "add": "Klik Imej dalam Pustaka Elemen dan pilih dari mana gambar itu (foto projek atau komputer anda), atau seret jubin ke tempat yang anda mahu untuk ruang gambar kosong.",
         "work": [
-          "Lepaskan fail gambar dari komputer anda ke atasnya, klik dua kali padanya, atau gunakan Muat Naik Imej dalam sifatnya (PNG atau JPG, sehingga 4 MB).",
-          "Klik dua kali pada gambar untuk memangkasnya.",
+          "Klik dua kali padanya, atau gunakan Pilih gambar dalam sifatnya, untuk memilih salah satu foto projek (ditapis mengikut tarikh dan tag) atau fail dari komputer anda (PNG atau JPG, sehingga 4 MB). Anda juga boleh melepaskan fail gambar ke atasnya.",
+          "Klik dua kali pada gambar untuk memangkasnya; untuk menukarnya, gunakan Tukar Imej padanya atau Pilih gambar dalam sifatnya.",
           "Bentuk membulatkannya: Bulat sedikit, Lembut, Bulatan, Pil dan banyak lagi. Bentuk mengikut gambar apabila anda mengubah saiznya.",
           "Seret logo projek anda dari Data Laporan ke atasnya untuk menggunakan logo itu."
         ],
@@ -3535,7 +3655,7 @@
         "good": [
           "Hanya carta yang datanya telah disediakan akan dicetak.",
           "Angkanya diambil semula setiap kali laporan dijalankan.",
-          "Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP, carta menawarkan medan papan pemuka itu sahaja: cth. carta garis QA/QC bermula dengan Tarikh Pemeriksaan Dirancang mengikut bulan, dan Satu bagi setiap boleh memisahkannya mengikut Jenis Pemeriksaan.",
+          "Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP, carta menawarkan medan papan pemuka itu sahaja: cth. carta garis QA/QC bermula dengan Tarikh Pemeriksaan Dirancang mengikut bulan, dan Pisahkan Mengikut boleh memisahkannya mengikut Jenis Pemeriksaan. Tetingkap tetapan disusun seperti panel widget papan pemuka, dengan perkataan yang sama.",
           "Lajur dengan senarai nilai tetap (seperti Status), lajur ya / tidak dan tarikh paling sesuai sebagai kategori. Carta bar, garis dan kawasan menunjukkan nilai senarai mengikut susunannya sendiri; pai, donat dan peta pokok meletakkan yang terbesar dahulu.",
           "Lajur yang hampir setiap barisnya berbeza (seperti Penerangan) disenaraikan di bawah Lajur lain. Lajur yang memaut kepada rekod lain (seperti Kontrak) tidak boleh digunakan sebagai kategori."
         ]
@@ -3634,6 +3754,26 @@
           "Ia dicetak pada setiap halaman, termasuk halaman kulit dan kandungan, kecuali kulit yang memenuhi seluruh helaian."
         ]
       },
+      "watermark": {
+        "title": "Tera Air",
+        "what": "Perkataan samar seperti DRAF atau SULIT, atau gambar pudar seperti logo, dicetak di belakang kandungan setiap halaman.",
+        "when": "Untuk menandakan laporan sebagai draf atau sulit, atau meletakkan logo organisasi anda secara samar di belakang setiap halaman.",
+        "add": "Klik Tera Air di bawah Elemen Komposit, seret ke halaman, atau pilih Tambah tera air dalam menu ⋯ di atas mana-mana halaman. Satu templat mempunyai satu tera air; jubin dimatikan sebaik sahaja ada satu.",
+        "work": [
+          "Apa yang dipaparkan: taip perkataannya (atau pilih DRAF, SULIT…), atau pilih gambar.",
+          "Rupanya: warna, tebal dan saiz untuk perkataan; saiz dan kelabu untuk gambar; dan sekuat mana ia dicetak.",
+          "Sudut: menaik, mendatar, menurun atau tegak, atau apa-apa sudut dengan peluncur.",
+          "Di mana pada halaman: sekali (di tengah, di bucu atau di tepi) atau berulang di seluruh halaman.",
+          "Halaman mana: jika ada kulit atau halaman kandungan, pilih sama ada ia turut ada tera air.",
+          "Ia tidak boleh diklik pada halaman: buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air."
+        ],
+        "good": [
+          "Ia dicetak di belakang semua: kotak berwarna dan baris jadual menutupinya, seperti di atas kertas.",
+          "Perkataan yang tidak muat pada halaman pada sudutnya akan dikecilkan sendiri.",
+          "Ia turut dicetak pada kulit dan halaman kandungan, malah kulit yang memenuhi seluruh helaian; pilih halaman dalam Halaman mana.",
+          "Pratonton PDF menunjukkan dengan tepat apa yang dicetak."
+        ]
+      },
       "pageNumber": {
         "title": "Nombor Halaman",
         "what": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
@@ -3714,7 +3854,7 @@
       },
       "picture": {
         "title": "Nama Imej",
-        "text": "Gambar yang dipaparkan. Muat naik satu dari komputer anda (PNG atau JPG, sehingga 4 MB); namanya dipaparkan di sini."
+        "text": "Gambar yang dipaparkan. Pilih gambar membuka foto projek (tapis mengikut tarikh dan tag) atau membolehkan anda menggunakan fail dari komputer anda (PNG atau JPG, sehingga 4 MB); namanya dipaparkan di sini."
       },
       "imageShape": {
         "title": "Bentuk",
@@ -3802,7 +3942,7 @@
       },
       "chartData": {
         "title": "Data",
-        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis. Penapis dibuka dengan lajur yang dikumpulkan oleh carta dan tarikhnya; butang medan menambah yang lain. Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP (QA/QC, Perolehan, Risiko, Isu, EOT, LAD, Pematuhan, Insiden dan audit), carta menawarkan medan yang sama seperti papan pemuka di sana, dengan nama yang sama, dan bermula dengan cara yang sama."
+        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis. Penapis berfungsi seperti pada papan pemuka CDP: Tambah penapis, pilih medan, kemudian nilainya. Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP (QA/QC, Perolehan, Risiko, Isu, EOT, LAD, Pematuhan, Insiden dan audit), carta menawarkan medan yang sama seperti papan pemuka di sana, dengan nama yang sama, dan bermula dengan cara yang sama."
       },
       "chartTitle": {
         "title": "Carta",
@@ -3886,7 +4026,7 @@
       },
       "templateFont": {
         "title": "Fon",
-        "text": "Fon dan saiz yang digunakan oleh teks baharu dalam templat ini, dan sama ada ia bermula tebal, condong atau bergaris bawah."
+        "text": "Fon dan saiz yang digunakan oleh teks baharu dalam templat ini. Jadikan teks tebal, condong atau bergaris bawah dengan butangnya sendiri semasa anda menaip di dalamnya."
       },
       "templateBands": {
         "title": "Bahagian Halaman",
@@ -3932,6 +4072,31 @@
       "projectDateBefore": {
         "title": "Perkataan sebelum tarikh",
         "text": "Teks yang dicetak di hadapan tarikh, contohnya “Tarikh mula:”. Tiada apa yang dicetak apabila projek tiada tarikh."
+      },
+      "watermarkContent": {
+        "title": "Apa yang dipaparkan",
+        "text": "Perkataan, seperti DRAF atau SULIT, atau gambar, seperti logo anda. Perkataan boleh lebih daripada satu baris.",
+        "example": "SULIT, atau dua baris: DRAF / Bukan untuk edaran"
+      },
+      "watermarkLook": {
+        "title": "Rupanya",
+        "text": "Warna, ketebalan dan saiz perkataan, atau saiz gambar dan sama ada ia dipudarkan ke kelabu. Kekuatan menetapkan sesamar mana ia dicetak: Cerah (15%) adalah biasa."
+      },
+      "watermarkAngle": {
+        "title": "Sudut",
+        "text": "Cara ia dipusingkan. Menaik bermula dari bawah kiri ke atas kanan, tera air yang biasa. Gunakan peluncur untuk apa-apa sudut."
+      },
+      "watermarkPlace": {
+        "title": "Di mana pada halaman",
+        "text": "Sekali, di kedudukan yang anda pilih (tengah, bucu atau tepi), atau berulang dalam baris di seluruh halaman."
+      },
+      "watermarkPages": {
+        "title": "Halaman mana",
+        "text": "Setiap halaman, setiap halaman kecuali kulit, atau hanya halaman biasa (bukan kulit dan halaman kandungan)."
+      },
+      "watermarkPageMenu": {
+        "title": "Tera air",
+        "text": "Teks pudar atau logo pudar yang dicetak di belakang setiap halaman templat ini. Ia tidak boleh diklik pada halaman: buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air untuk kembali ke tetapan ini."
       }
     }
   },
@@ -3948,21 +4113,23 @@
     "scopeHint": "Tetapan ini hanya mengubah templat yang sedang dibuka. Templat baharu bermula daripada Tetapan Lalai."
   },
   "defaultSettings": {
-    "intro": "Templat baharu bermula dengan tetapan ini. Untuk mengubah templat yang sedang dibuka, gunakan Tetapan Templat di sebelah kanan (klik bahagian halaman yang kosong).",
+    "saveFailed": "Tidak dapat menyimpan Tetapan Lalai anda\nIa disimpan dalam pelayar ini dan disimpan semula dengan perubahan anda yang seterusnya.",
+    "intro": "Templat baharu bermula dengan tetapan ini. Untuk mengubah satu templat sahaja, bukanya dan gunakan Tetapan Templat (klik bahagian halaman yang kosong).",
     "reset": "Set semula ke lalai aplikasi",
     "resetDone": "Tetapan Lalai kembali kepada tetapan asal.",
-    "apply": "Guna pada templat ini",
-    "applied": "Digunakan pada templat ini.",
     "bandsHint": "Bahagian yang ada pada setiap templat baharu. Butiran, tempat kandungan anda, sentiasa ada.",
     "original": "Asal",
     "originalDone": "Kembali kepada asal.",
-    "resetAll": "Set semula semua ke asal"
+    "resetAll": "Set semula semua ke asal",
+    "page": {
+      "eyebrow": "Akaun",
+      "title": "Tetapan Lalai",
+      "subtitle": "Kertas, jidar, fon, bahagian halaman dan ketinggian bahagian yang digunakan oleh setiap templat baharu. Disimpan dengan akaun anda."
+    }
   },
   "myTemplates": {
-    "count": "Tiada templat | 1 templat | {count} templat",
     "noMatch": "Tiada templat bernama \"{query}\"",
     "noMatchHint": "Semak ejaan, atau cuba kurangkan perkataan.",
-    "resultsFor": "Templat yang sepadan dengan \"{query}\"",
     "clearSearch": "Kosongkan",
     "columns": {
       "name": "Nama",
@@ -3971,37 +4138,136 @@
       "owner": "Pemilik",
       "actions": "Tindakan"
     },
-    "sortBy": "Isih mengikut",
-    "sort": {
-      "lastModified": "Terakhir disunting",
-      "createdAt": "Terbaharu dahulu",
-      "nameAsc": "Nama A hingga Z",
-      "nameDesc": "Nama Z hingga A"
-    },
     "view": "Tunjukkan templat sebagai",
     "views": {
       "grid": "Grid",
       "list": "Senarai"
     },
-    "loadFailed": "Templat anda tidak dapat dimuatkan.",
-    "tryAgain": "Cuba lagi",
-    "empty": "Anda belum mempunyai templat.",
-    "showing": "Menunjukkan {shown} daripada {total}",
-    "loadMore": "Muat lagi"
+    "tryAgain": "Cuba lagi"
+  },
+  "reportCatalog": {
+    "save": {
+      "failed": "Tidak dapat menyimpan templat\n{reason} Ia disimpan semula dengan perubahan anda yang seterusnya, atau tekan Ctrl+S untuk mencuba sekarang."
+    },
+    "errors": {
+      "server": "Pelayan laporan tidak memberi sebab.",
+      "status": "HTTP {status} · {reason}"
+    },
+    "templates": {
+      "subtitle": "Mulakan daripada templat lalai, buka templat anda, atau cipta yang baharu.",
+      "create": "Cipta templat"
+    },
+    "defaultTemplates": {
+      "title": "Templat lalai",
+      "hint": "Templat sedia ada dari pelayan laporan. Buka satu untuk melihat dan pratonton, atau pendua untuk mendapatkan salinan yang boleh anda ubah.",
+      "badge": "Lalai",
+      "loadFailed": "Templat lalai tidak dapat dimuatkan daripada pelayan laporan.",
+      "showMore": "Tunjuk lagi ({shown} daripada {total})",
+      "opening": "Membuka templat…",
+      "opened": "Templat lalai dibuka\nAnda boleh melihat dan pratonton templat ini. Pendua untuk mengubahnya.",
+      "openFailed": "Templat lalai tidak dapat dibuka\n{reason}",
+      "errors": {
+        "unknown": "Pelayan laporan tidak menyatakan sebabnya."
+      },
+      "contentProblems": {
+        "noContent": "Dibuka sebagai susun atur kosong\n\"{name}\" tiada kandungan templat di pelayan laporan.",
+        "notJrxml": "Dibuka sebagai susun atur kosong\nKandungan \"{name}\" di pelayan laporan bukan templat JRXML (mungkin templat HTML).",
+        "badJrxml": "Dibuka sebagai susun atur kosong\nJRXML \"{name}\" bukan dalam format yang boleh dibuka oleh pereka."
+      },
+      "openAction": "Buka",
+      "openHint": "Lihat templat ini dalam pereka",
+      "barTitle": "Templat lalai: {name}.",
+      "barText": "Anda boleh melihat dan pratonton templat ini. Untuk mengubahnya, pendua untuk mendapatkan salinan anda sendiri.",
+      "owner": "Pelayan laporan",
+      "readOnly": "Templat lalai ini tidak boleh diubah\nPendua untuk mendapatkan salinan anda sendiri untuk diusahakan."
+    },
+    "serverTemplates": {
+      "title": "Templat",
+      "hint": "Templat organisasi anda pada pelayan laporan. Buka satu untuk mengusahakannya, atau pendua untuk mendapatkan salinan.",
+      "loadFailed": "Templat tidak dapat dimuatkan daripada pelayan laporan."
+    },
+    "create": {
+      "failed": "Templat tidak dapat dicipta pada pelayan\n{reason}",
+      "creating": "Mencipta templat…",
+      "notFound": "Templat dicipta, tetapi tidak ditemui\n\"{name}\" telah dicipta pada pelayan tetapi tidak dapat dibuka. Bukanya dari Templat."
+    },
+    "serverDelete": {
+      "done": "Templat dipadam\n\"{name}\" telah dibuang dari Templat.",
+      "failed": "Templat tidak dapat dipadam\n{reason}"
+    },
+    "copy": {
+      "title": "Pendua templat",
+      "message": "Buat salinan \"{name}\"? Salinan akan ditambah ke Templat.",
+      "done": "Templat dipendua\nSalinan \"{name}\" ada dalam Templat.",
+      "failed": "Templat tidak dapat dipendua\n{reason}",
+      "hint": "Buat salinan templat ini dalam Templat",
+      "openTitle": "Buka salinan?",
+      "openMessage": "\"{name}\" ada dalam Templat. Buka sekarang untuk mula mengusahakannya?",
+      "openConfirm": "Buka salinan",
+      "openCancel": "Bukan sekarang"
+    }
   },
   "openTemplate": {
     "title": "Buka templat",
     "tabs": {
-      "mine": "Templat saya",
+      "mine": "Templat",
       "computer": "Dari komputer saya"
     },
     "openNow": "Sedang dibuka",
-    "none": "Anda belum mempunyai templat yang disimpan.",
+    "none": "Belum ada templat di pelayan laporan.",
     "dropTitle": "Lepaskan fail .jrxml di sini, atau klik untuk memilih",
     "dropHint": "Templat yang dimuat turun dari sini atau dibuat dalam Jaspersoft Studio",
-    "addedNote": "Ia dibuka sebagai templat baharu dan ditambah ke Templat saya.",
-    "seeAll": "Lihat semua dalam Templat Saya",
-    "notFound": "Templat tidak ditemui\nIa mungkin telah dipadam."
+    "addedNote": "Ia menjadi templat baharu di pelayan laporan, dinamakan mengikut fail, dengan susun atur fail ini.",
+    "seeAll": "Lihat semua di halaman Templat"
+  },
+  "pictureChooser": {
+    "title": "Pilih gambar",
+    "tabs": {
+      "photos": "Foto projek",
+      "computer": "Dari komputer saya"
+    },
+    "project": "Projek",
+    "filterBy": "Tapis mengikut",
+    "dateKinds": {
+      "uploadedAt": "Tarikh dimuat naik",
+      "photoTakenAt": "Tarikh diambil"
+    },
+    "period": "Tempoh",
+    "periods": {
+      "all": "Semua masa",
+      "today": "Hari ini",
+      "7d": "7 hari lepas",
+      "15d": "15 hari lepas",
+      "1m": "Sebulan lepas",
+      "3m": "3 bulan lepas",
+      "6m": "6 bulan lepas",
+      "custom": "Pilih tarikh"
+    },
+    "from": "Dari",
+    "to": "Hingga",
+    "clearFilters": "Kosongkan penapis",
+    "tags": "Tag",
+    "count": "Tiada foto | 1 foto | {count} foto",
+    "none": "Projek ini belum mempunyai foto",
+    "noneHint": "Foto yang ditambah ke halaman Foto projek dalam CDP dipaparkan di sini. Anda juga boleh menggunakan gambar dari komputer anda.",
+    "noMatch": "Tiada foto sepadan dengan penapis ini",
+    "noMatchHint": "Cuba tempoh lain, atau kurangkan tag.",
+    "loadFailed": "Foto tidak dapat dimuatkan",
+    "retry": "Cuba lagi",
+    "noProject": "Belum ada projek dipilih",
+    "noProjectHint": "Pilih projek templat ini di bahagian atas, di sebelah namanya, untuk memilih daripada fotonya. Atau gunakan gambar dari komputer anda.",
+    "chooseHint": "Klik foto untuk memilihnya, atau klik dua kali untuk terus menggunakannya.",
+    "usePhoto": "Guna foto ini",
+    "dropTitle": "Lepaskan gambar di sini, atau klik untuk memilih",
+    "cantUse": "Foto ini tidak boleh digunakan\nFailnya tidak ditemui. Sila pilih yang lain.",
+    "tile": {
+      "chooseKind": "Dari mana gambar ini?",
+      "photos": "Foto projek",
+      "photosDesc": "Salah satu foto projek templat ini, ditapis mengikut tarikh dan tag.",
+      "computer": "Dari komputer saya",
+      "computerDesc": "Fail PNG atau JPG, sehingga 4 MB.",
+      "dragHint": "Atau seret jubin ke halaman untuk ruang gambar kosong, kemudian klik dua kali padanya."
+    }
   },
   "location": {
     "fields": {
@@ -4088,6 +4354,97 @@
       "followOff": "Tandakan untuk menunjukkan tempat projek, dan mengikutnya."
     },
     "addressPlaceholder": "Alamat"
+  },
+  "watermark": {
+    "exists": "Templat ini sudah mempunyai tera air\nIa dipilih: ubah di sebelah kanan. Kemudian, gunakan Ubah tera air dalam menu ⋯ di atas mana-mana halaman.",
+    "tileExists": "Ia tidak boleh diklik pada halaman: buka menu ⋯ di atas mana-mana halaman dan pilih Ubah tera air.",
+    "canvasTag": "Tera air",
+    "canvasNoPicture": "Pilih gambar untuk tera air di sebelah kanan",
+    "canvasPictureFailed": "Gambar tera air tidak dapat dimuatkan",
+    "canvasNoText": "Taip perkataan tera air di sebelah kanan",
+    "words": {
+      "DRAFT": "DRAF",
+      "CONFIDENTIAL": "SULIT",
+      "COPY": "SALINAN",
+      "SAMPLE": "CONTOH",
+      "APPROVED": "DILULUSKAN"
+    },
+    "kinds": {
+      "text": "Teks",
+      "picture": "Gambar"
+    },
+    "sizes": {
+      "small": "Kecil",
+      "medium": "Sederhana",
+      "large": "Besar",
+      "huge": "Sangat besar"
+    },
+    "strengths": {
+      "veryLight": "Sangat cerah",
+      "light": "Cerah",
+      "medium": "Sederhana",
+      "strong": "Kuat"
+    },
+    "angles": {
+      "diagonalUp": "Menaik",
+      "straight": "Mendatar",
+      "diagonalDown": "Menurun",
+      "upwards": "Tegak"
+    },
+    "places": {
+      "topLeft": "Atas kiri",
+      "top": "Atas",
+      "topRight": "Atas kanan",
+      "left": "Kiri",
+      "center": "Tengah halaman",
+      "right": "Kanan",
+      "bottomLeft": "Bawah kiri",
+      "bottom": "Bawah",
+      "bottomRight": "Bawah kanan"
+    },
+    "pages": {
+      "all": "Setiap halaman",
+      "notCover": "Setiap halaman kecuali kulit",
+      "normal": "Hanya halaman biasa (bukan kulit dan halaman kandungan)"
+    },
+    "panel": {
+      "contentTitle": "Apa yang dipaparkan",
+      "words": "Perkataan",
+      "wordsPlaceholder": "cth. DRAF",
+      "wordsHint": "Tekan Enter untuk baris kedua. Perkataan yang terlalu panjang untuk halaman akan dikecilkan.",
+      "picture": "Gambar",
+      "choosePicture": "Pilih gambar",
+      "changePicture": "Tukar",
+      "noPicture": "Belum ada gambar",
+      "pictureNoName": "Gambar",
+      "pictureFailed": "Gambar tidak dapat dimuatkan. Semak sambungan anda.",
+      "retry": "Cuba lagi",
+      "grey": "Pudarkan ke kelabu",
+      "pictureHint": "Logo atau cop paling sesuai. Ia dipudarkan mengikut tetapan di bawah.",
+      "lookTitle": "Rupanya",
+      "colour": "Warna",
+      "bold": "Tebal",
+      "size": "Saiz",
+      "sizeOwn": "Atau saiz anda sendiri",
+      "sizeHint": "Dikecilkan sendiri jika tidak muat pada halaman.",
+      "pictureSize": "Saiz",
+      "pictureSizeValue": "{n}% lebar halaman",
+      "strength": "Kekuatan",
+      "tooStrong": "Sekuat ini, perkataan yang dicetak di atasnya sukar dibaca. Cerah (15%) adalah biasa.",
+      "angleTitle": "Sudut",
+      "placeTitle": "Di mana pada halaman",
+      "once": "Sekali",
+      "repeated": "Berulang",
+      "spot": "Kedudukan",
+      "repeatedHint": "Diulang dalam baris di seluruh halaman.",
+      "pagesTitle": "Halaman mana",
+      "remove": "Buang tera air",
+      "focusNote": "Semasa tetapan ini dibuka, halaman dipudarkan supaya tera air jelas kelihatan. Dalam PDF ia dicetak di belakang kandungan."
+    },
+    "pageMenu": {
+      "add": "Tambah tera air",
+      "change": "Ubah tera air"
+    }
   },
   "colorPicker": {
     "mixed": "Warna bercampur"
@@ -4235,5 +4592,16 @@
     "noSetup": "Baris daripada {list} projek\nJadual ini menyenaraikan setiap item projek templat. Ubah rupa dan tajuknya dalam sifatnya.",
     "rowsFrom": "{project} · {list} (daripada projek)",
     "hint": "Setiap item senarai ini dalam projek templat. Pilih projek lain di atas dan ia menunjukkan item projek itu."
+  },
+  "defaultSettingsJson": {
+    "copied": "Disalin",
+    "user": {
+      "badge": "Ditetapkan oleh pengguna",
+      "hint": "Tetapan Lalai dan Snap & grid pengguna, disimpan bersama akaun mereka di pelayan (dan dalam pelayar ini). Diubah hanya dalam Tetapan Lalai."
+    },
+    "developer": {
+      "badge": "Ditetapkan dalam kod",
+      "hint": "Apa yang dibawa oleh aplikasi (Asal dalam Tetapan Lalai). Baca sahaja: diubah hanya dalam kod."
+    }
   }
 }

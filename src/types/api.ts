@@ -3,7 +3,9 @@
 
 export type ApiResponseType = "json" | "text" | "blob" | "arrayBuffer";
 
-export interface ApiRequestOptions extends Omit<RequestInit, "body" | "headers"> {
+// No `signal`: our API requests are never cancelled (the user's rule: no
+// "(canceled)" request anywhere); a stale answer is ignored by its caller instead
+export interface ApiRequestOptions extends Omit<RequestInit, "body" | "headers" | "signal"> {
   body?: BodyInit | null;
   headers?: HeadersInit;
   responseType?: ApiResponseType;
@@ -24,6 +26,8 @@ export type ApiResponse<T> = T | ApiEnvelope<T>;
 // A failed request's JSON body: the fields the designer reads from it
 export interface ApiErrorBody {
   detail?: string;
+  // Jmix Reports REST: { error, details }
+  details?: string;
   message?: string;
   error?: string;
   title?: string;

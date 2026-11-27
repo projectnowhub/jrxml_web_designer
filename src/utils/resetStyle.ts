@@ -8,6 +8,7 @@ import { IMAGE_CORNER_RADIUS_PROPERTY, IMAGE_SHAPE_PROPERTY, TEXT_CORNER_RADIUS_
 import { isPagination } from "./paginationPresets";
 import { DEFAULT_CHART_PALETTE } from "./chart/chartTypes";
 import { resetContentsListStyle } from "./contentsList";
+import { DEFAULT_WATERMARK, getWatermarkSetup, isWatermark, setWatermarkSetup } from "./watermark/watermarkElement";
 
 // Properties that only hold styling
 const STYLE_PROPERTIES = new Set([
@@ -35,6 +36,13 @@ export interface ResetOptions {
 // Changes the element in place; the caller records the undo step
 export function resetElementStyle(element: DesignElement, options: ResetOptions = {}): void {
   const el = element as any;
+  // A watermark gets the original look back (grey, faint, diagonal, once in
+  // the middle) and keeps its words or picture and its pages
+  if (isWatermark(element)) {
+    const { kind, text, picture, pictureName, pages } = getWatermarkSetup(el);
+    setWatermarkSetup(element, { ...DEFAULT_WATERMARK, kind, text, picture, pictureName, pages });
+    return;
+  }
   dropStyleProperties(el);
   delete el.forecolor;
   delete el.forecolorMode;

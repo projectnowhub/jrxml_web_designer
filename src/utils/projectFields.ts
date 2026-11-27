@@ -4,7 +4,8 @@
 // changes. Dropped on a barcode, the value is copied (a barcode holds a fixed
 // code its type must accept); the logo is copied as a fixed picture.
 //
-// The report's chosen projects are the `com.cdp.projects` report property.
+// The template's project is the `com.cdp.projects` report property: its id
+// only (`[{ "id": "<uuid>" }]`); the name always comes from the projects API.
 
 import type { Band, BarcodeElement, DesignElement, FrameElement } from "@/types";
 import { checkBarcodeValue, toBarcodeExpression } from "./barcode/barcodeTypes";
@@ -140,7 +141,9 @@ export function parseReportProjects(json: string | null | undefined): ReportProj
     if (!Array.isArray(list)) return [];
     return list
       .filter((p) => typeof p?.id === "string" && p.id)
-      .map((p) => ({ id: p.id, name: typeof p.name === "string" ? p.name : p.id }));
+      // Only the id is stored; the name is filled in from the projects API
+      // (PDFDesigner's templateProjectQueries)
+      .map((p) => ({ id: p.id, name: "" }));
   } catch {
     return [];
   }

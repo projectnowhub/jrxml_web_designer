@@ -14,13 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, watch } from "vue";
 import { useRouter, RouterView } from "vue-router";
 import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken } from "./services/apiClient";
-import { useUserSettingsStore } from "./stores/userSettings";
 import { useAuthStore } from "./stores/auth";
+import { useUserSettingsStore } from "./stores/userSettings";
 import { fetchUser, loginErrorQuery } from "./services/authService";
 import { isDesktopApp } from "./utils/desktopApp";
 import GuidedTour from "./components/help/GuidedTour.vue";
@@ -30,6 +30,18 @@ import TooltipLayer from "./components/common/TooltipLayer.vue";
 import { missingHelpTexts } from "./utils/helpCoverage";
 
 const router = useRouter();
+
+// Signed in (at start, or after signing in): the user's Default Settings come
+// from the server into this browser
+const authStore = useAuthStore();
+const userSettings = useUserSettingsStore();
+watch(
+  () => authStore.user.id,
+  (id) => {
+    if (id && getAccessToken()) void userSettings.loadFromServer(id);
+  },
+  { immediate: true },
+);
 
 const themeOverrides: GlobalThemeOverrides = {
   common: {
@@ -82,8 +94,6 @@ async function handleDeepLink(urls: string[]) {
         await router.replace({ path: "/login", query: loginErrorQuery(error) });
         return;
       }
-      // The user's default settings (Default Settings, Snap & grid)
-      await useUserSettingsStore().syncFromServer();
 
       await router.replace("/");
       return;
@@ -106,11 +116,8 @@ if (import.meta.env.DEV) {
 }
 
 onMounted(async () => {
-  // Already signed in: the user's default settings, which may have changed on
-  // another computer (a new login reads them itself)
-  // and the user's name (shown in the greeting and the account menu)
+  // Already signed in: the user's name (shown in the greeting and the account menu)
   if (getAccessToken()) {
-    void useUserSettingsStore().syncFromServer();
     void useAuthStore().refresh();
   }
 

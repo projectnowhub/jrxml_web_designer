@@ -254,6 +254,17 @@ export const GLOBAL_BAND_LIMITS_STORAGE_KEY = "jrxml_global_band_limits";
 // (stores/userSettings.ts)
 export const REPORT_DEFAULTS_STORAGE_KEY = "designer.reportDefaults";
 export const SNAP_SETTINGS_STORAGE_KEY = "designerSnapSettings";
+// The browser keys holding the user's Default Settings (cleared on sign-out:
+// the next person's come from the server)
+export const USER_SETTINGS_STORAGE_KEYS = [
+  REPORT_DEFAULTS_STORAGE_KEY,
+  GLOBAL_BAND_LIMITS_STORAGE_KEY,
+  SNAP_SETTINGS_STORAGE_KEY,
+] as const;
+// The user's Default Settings are saved on the server this long after the last change
+export const USER_SETTINGS_SAVE_DELAY_MS = 1000;
+// The header's Snap & grid switches as the app comes (the developer default)
+export const DEFAULT_SNAP_SETTINGS = { snapToGrid: true, snapToAlignment: true, showGrid: true } as const;
 
 export function getEffectiveDefaultBandConfig(): Record<
   string,
@@ -383,3 +394,6 @@ export const UI_CONSTANTS = {
   ELEMENT_PASTE_OFFSET: 10,
   SECONDARY_AXIS_WEIGHT: 0.1,
 };
+
+// The longest template name the header takes (letters); longer ones are cut with a warning
+export const TEMPLATE_NAME_MAX_LENGTH = 30;

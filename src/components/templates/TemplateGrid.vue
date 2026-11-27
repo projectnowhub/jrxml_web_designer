@@ -1,28 +1,17 @@
 <template>
-  <!-- Template cards (home page, My Templates grid): a click opens the
-       template in the designer; ⋯ opens its menu (TemplateMenu) -->
+  <!-- The report server's templates as cards (Templates page): a click opens
+       the template in the designer; ⋯ opens its menu (TemplateMenu). kind
+       "default": a "Default" badge by the name, Open / Duplicate; "server"
+       (the tenant's own): Open / Duplicate / Delete -->
   <div class="template-grid">
-    <article
-      v-if="showNew"
-      class="template-card new-card"
-      data-help="create-report"
-      role="button"
-      tabindex="0"
-      @click="newTemplate"
-      @keydown.enter="newTemplate"
-    >
-      <div class="new-icon"><Plus :size="22" /></div>
-      <strong>{{ t("home.createNewTemplate") }}</strong
-      ><span>{{ t("home.createNewTemplateHint") }}</span>
-    </article>
     <article
       v-for="(template, index) in templates"
       :key="template.id"
       class="template-card"
       role="button"
       tabindex="0"
-      @click="openTemplate(template)"
-      @keydown.enter.self="openTemplate(template)"
+      @click="open(template)"
+      @keydown.enter.self="open(template)"
     >
       <div class="template-preview" :class="TONES[index % TONES.length]">
         <div class="preview-lines"><i /><i /><i /><i /></div>
@@ -31,6 +20,10 @@
       <div class="template-info">
         <div class="template-title">
           <strong>{{ template.name }}</strong>
+          <span v-if="isDefault" class="default-badge">
+            <Lock :size="11" :stroke-width="2.5" aria-hidden="true" />
+            {{ t("reportCatalog.defaultTemplates.badge") }}
+          </span>
           <button
             type="button"
             class="more-button"
@@ -47,8 +40,8 @@
         </div>
         <span>{{ editedText(template) }}</span>
         <div class="owner-row">
-          <i>{{ owner.charAt(0) }}</i>
-          {{ t("home.createdBy", { name: owner }) }}
+          <i>{{ ownerOf(template).charAt(0) }}</i>
+          {{ t("home.createdBy", { name: ownerOf(template) }) }}
         </div>
       </div>
     </article>
@@ -62,25 +55,35 @@
       </div>
     </div>
 
-    <TemplateMenu ref="menuRef" />
+    <TemplateMenu ref="menuRef" :kind="kind" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { MoreHorizontal, Plus } from "@lucide/vue";
+import { Lock, MoreHorizontal } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import type { TemplateSummary } from "@/types/template";
+import type { TemplateCard } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
 
-withDefaults(
-  defineProps<{ templates: TemplateSummary[]; showNew?: boolean; owner: string; skeletons?: number }>(),
-  { skeletons: 0 },
+const props = withDefaults(
+  defineProps<{
+    templates: TemplateCard[];
+    // Shown when a template names no owner of its own
+    owner: string;
+    skeletons?: number;
+    kind?: "default" | "server";
+  }>(),
+  { skeletons: 0, kind: "server" },
 );
 
 const { t } = useI18n();
-const { editedText, openTemplate, newTemplate } = useTemplates();
+const { editedText, openDefaultTemplate } = useTemplates();
+
+const isDefault = computed(() => props.kind === "default");
+const ownerOf = (template: TemplateCard) => template.owner || props.owner;
+const open = (template: TemplateCard) => openDefaultTemplate(template);
 
 const TONES = ["violet", "blue", "green"];
 const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
@@ -112,31 +115,9 @@ const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
   box-shadow: 0 10px 24px rgba(124, 92, 247, 0.12);
   outline: none;
 }
-.new-card {
-  min-height: 238px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-style: dashed;
-  background: rgba(124, 92, 247, 0.04);
-  color: #45425a;
-}
-.new-card span,
 .template-info > span {
   color: #8a84a3;
   font-size: 11px;
-}
-.new-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  margin-bottom: 3px;
-  border-radius: 10px;
-  background: rgba(124, 92, 247, 0.1);
-  color: #6440f4;
 }
 .template-preview {
   height: 130px;
@@ -229,6 +210,19 @@ const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
   display: block;
   margin-top: 5px;
 }
+.default-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f4f3f8;
+  color: #6e6a80;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
 .owner-row {
   display: flex;
   align-items: center;
@@ -278,11 +272,6 @@ const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
   .skeleton-preview,
   .skeleton-line {
     animation: none;
-  }
-}
-@media (max-width: 620px) {
-  .new-card {
-    min-height: 180px;
   }
 }
 </style>

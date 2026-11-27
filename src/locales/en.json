@@ -9,8 +9,8 @@
     "showLeftPanel": "Show Left Panel",
     "hideRightPanel": "Hide Right Panel",
     "showRightPanel": "Show Right Panel",
-    "hideBottomPanel": "Hide Default Settings",
-    "showBottomPanel": "Show Default Settings",
+    "hideBottomPanel": "Hide developer panel",
+    "showBottomPanel": "Show developer panel",
     "snapMenu": "Snap & grid",
     "showGrid": "Show Grid",
     "showGridInfo": "Shows the grid lines on the page while you design. They never print in the PDF.",
@@ -27,8 +27,7 @@
     "help": "Help",
     "delete": "Delete",
     "copy": "Copy",
-    "paste": "Paste",
-    "defaultSettings": "Default Settings"
+    "paste": "Paste"
   },
   "fileManager": {
     "title": "File",
@@ -39,12 +38,9 @@
     "loadingFileFailed": "Loading file failed",
     "jrxmlOpened": "Opened \"{name}\"",
     "onlyJrxml": "Only .jrxml files\nChoose a template file ending in .jrxml.",
-    "deleteAllFiles": "Delete All Templates",
-    "deleteAllFilesConfirm": "Delete every template saved in this browser? The open template is deleted too and a new, empty one is opened. This can't be undone. Download any template you want to keep first.",
-    "deleteAllFilesDone": "All saved templates were deleted",
     "invalidFileFormat": "This file can't be opened\nIt isn't a valid template file.",
     "untitledReport": "Untitled Template",
-    "templateNotFound": "Template not found\nIt isn't saved in this browser, so a new one was started."
+    "templateNotFound": "Template not found\nThat address doesn't name a template on the report server, so a new one was made."
   },
   "elementLibrary": {
     "title": "Element Library",
@@ -117,7 +113,7 @@
     "tileHowChoose": "Click to choose, or drag it onto the page.",
     "tileHints": {
       "textField": "Words on the page: titles, paragraphs and labels.",
-      "image": "A picture or logo from your computer.",
+      "image": "A picture or logo: one of the project's photos, or a file from your computer.",
       "line": "A straight line to separate parts of the page.",
       "rectangle": "A shape for bars, rules and coloured backgrounds.",
       "ellipse": "A circle or oval, for example a coloured status dot.",
@@ -127,7 +123,8 @@
       "barcode": "A barcode or QR code.",
       "pageNumber": "Page numbers that fill in by themselves, such as Page 1 of 12.",
       "dateTime": "A date that fills itself in: the day the report is printed, this month or last month.",
-      "location": "A map of a place with a pin, and its address. Type the place, or drag Location from Report Data."
+      "location": "A map of a place with a pin, and its address. Type the place, or drag Location from Report Data.",
+      "watermark": "Faint text or a faded picture behind every page. Choose what it shows and how strong it prints. To come back to it later, open the ⋯ menu above any page and choose Change watermark."
     }
   },
   "bandNames": {
@@ -152,6 +149,7 @@
     "frameTitledSection": "Section Box",
     "framePhotoCard": "Photo Box",
     "framePageBorder": "Page Border",
+    "watermark": "Watermark",
     "table": "Table",
     "chart": "Chart",
     "barcode": "Barcode",
@@ -241,7 +239,7 @@
     "downloadJRXML": "Download JRXML",
     "saveJRXML": "Save JRXML",
     "changeImage": "Change Image",
-    "dropOrDoubleClickToUpload": "Drop image or double-click to upload",
+    "dropOrDoubleClickToUpload": "Drop a picture, or double-click to choose one",
     "uploadingImage": "Uploading...",
     "loadingImage": "Loading...",
     "storedImagePreviewUnavailable": "Preview unavailable",
@@ -292,7 +290,7 @@
     "imageExpression": "Image Expression",
     "imageExpressionHint": "e.g., \"logo.png\" or {imageFileHolder}",
     "imageName": "Image Name",
-    "imageNameHint": "Read-only: taken from the uploaded image file",
+    "imageNameHint": "Read-only: the name of the chosen picture",
     "radius": "Radius",
     "columnBreak": "Column Break",
     "breakNoBorder": "Break element does not support border settings.",
@@ -408,7 +406,6 @@
     "storedImage": "Stored image",
     "imageUploadHint": "PNG, JPG, JPEG · max 4 MB",
     "imagePreview": "Image preview",
-    "uploadImageButton": "Upload Image (PNG, JPG · max 4 MB)",
     "rotation": "Rotation",
     "rotationNone": "0° - No rotation",
     "rotationRight": "90° clockwise",
@@ -488,7 +485,8 @@
     "positionSize": "Position & size",
     "insertFieldLabel": "Insert a data field",
     "outline": "Outline",
-    "lineSettings": "Line"
+    "lineSettings": "Line",
+    "choosePictureButton": "Choose picture"
   },
   "bottomPanel": {
     "pageSettings": "Default Settings",
@@ -545,7 +543,6 @@
     "saveAsGlobalDefault": "Save as Global Defaults",
     "resetDefaults": "Reset to Defaults",
     "applyToCurrentTemplate": "Apply to this template",
-    "appliedToTemplateSuccess": "Applied to this template.",
     "savedAsGlobalDefault": "Current constraints saved as default for all new templates.",
     "resetToDefaultSuccess": "Reset band constraints to system defaults.",
     "resetToDeveloperDefaultsSuccess": "Back to the original.",
@@ -555,9 +552,9 @@
     "customPaperSize": "Custom",
     "maximize": "Full height (up to the header). Tip: double-click the panel's top edge.",
     "restore": "Back to the height before",
-    "detailsJson": "Details JSON",
-    "detailsNote": "details.json: where this template's data comes from, for the report server (developers only).",
-    "detailsCopied": "details.json copied",
+    "reportBands": "Report Bands",
+    "userDefaultsJson": "User Defaults JSON",
+    "developerDefaultsJson": "Developer Defaults JSON",
     "copyFailed": "Couldn't copy\nSelect the text and copy it yourself."
   },
   "zoom": {
@@ -646,10 +643,11 @@
     "failedHint": "Please try again in a moment.",
     "tryAgain": "Try again",
     "errors": {
-      "httpFailure": "PDF generation failed (HTTP {status})",
-      "invalidJson": "The server returned invalid JSON instead of a PDF",
-      "noPdf": "The server response did not contain a PDF",
-      "notPdf": "The server response is not a PDF (content type: {type})"
+      "httpFailure": "The report server couldn't make the PDF (HTTP {status})",
+      "notPdf": "The report server didn't send a PDF (content type: {type})",
+      "notOnServer": "This template isn't on the report server yet, so it can't be previewed. Open it from the Templates page and try again.",
+      "notSaved": "The template couldn't be saved on the report server, so the PDF would miss your latest changes. Try Preview PDF again in a moment.",
+      "noProject": "This template needs a project to make the PDF. Choose one in the box next to the template's name."
     },
     "tables": {
       "readOnly": "Read-only — edit in the designer",
@@ -666,11 +664,6 @@
       "total": "Total",
       "printsNothing": "prints nothing until this is fixed."
     }
-  },
-  "previewServerSettings": {
-    "title": "Preview Server Settings",
-    "serverUrl": "Server URL",
-    "sourceInfo": "Preview server source code address:"
   },
   "displayRules": {
     "ruleType": "Display Rule",
@@ -763,8 +756,7 @@
     "close": "Close"
   },
   "notifications": {
-    "fileSavedSuccess": "File saved successfully",
-    "fileSaveFailed": "Couldn't save the file\nPlease try again.",
+    "fileSavedSuccess": "Template saved",
     "jrxmlCopiedSuccess": "JRXML content copied to clipboard",
     "jrxmlCopyFailed": "Couldn't copy\nPlease select the text and copy it yourself.",
     "jrxmlEditSaved": "JRXML edit saved, interface updated",
@@ -836,12 +828,17 @@
     "notifications": "Notifications",
     "signOut": "Sign out",
     "templates": "Templates",
-    "myTemplates": "My templates",
     "activity": "Activity",
     "allSystemsOperational": "All systems operational",
     "closeNavigation": "Close navigation",
     "accountMenu": "Account menu",
-    "defaultWorkspace": "Your CDP workspace"
+    "defaultWorkspace": "Your CDP workspace",
+    "templateSearch": {
+      "noMatch": "No template matches \"{words}\"",
+      "failed": "Couldn't search the templates. Try again in a moment.",
+      "more": "Showing the first {shown} of {total}. Type more of the name to narrow it down.",
+      "tooShort": "Type at least {n} letters to search."
+    }
   },
   "home": {
     "eyebrow": "Template workspace",
@@ -855,15 +852,12 @@
     "subtitle": "Create, organize, and manage your report templates.",
     "recentTemplates": "Recent templates",
     "viewAll": "View all",
-    "createNewTemplate": "Create a new template",
-    "createNewTemplateHint": "Start with a blank template",
     "moreOptions": "More options",
     "createdBy": "Created by {name}",
     "sharedWithYou": "Shared with you",
     "recentlyAccessed": "Recently accessed",
     "noSharedTemplates": "No shared templates yet",
     "noSharedTemplatesHint": "Templates shared with you will appear here.",
-    "copyName": "{name} (copy)",
     "edited": {
       "today": "Edited today at {time}",
       "yesterday": "Edited yesterday",
@@ -871,23 +865,14 @@
     },
     "menu": {
       "open": "Open",
-      "rename": "Rename",
       "duplicate": "Duplicate",
       "delete": "Delete"
     },
-    "renameTitle": "Rename template",
-    "renameMessage": "Type the new name for this template.",
     "deleteTitle": "Delete template",
-    "deleteMessage": "Delete \"{name}\"? This can't be undone.",
-    "openTitle": "Open template",
-    "openMessage": "Open \"{name}\" in the designer to edit it?",
-    "duplicateTitle": "Duplicate template",
-    "duplicateMessage": "Make a copy of \"{name}\"? The copy is added to your templates."
+    "deleteMessage": "Delete \"{name}\"? This can't be undone."
   },
   "pages": {
     "workspace": "Workspace",
-    "myTemplates": "My Templates",
-    "myTemplatesDescription": "View and manage the templates you have created or saved.",
     "activity": "Activity",
     "activityDescription": "View recent activity and changes across your workspace."
   },
@@ -897,14 +882,15 @@
     "saving": "Saving...",
     "saveFailed": "Save failed",
     "saved": "Saved",
-    "savingTitle": "Saving changes...",
-    "saveFailedTitle": "Auto-save failed",
-    "savedTitle": "All changes are saved automatically",
+    "savingTitle": "Saving to the report server a moment after you stop editing...",
+    "saveFailedTitle": "Couldn't save to the report server. Click to try again.",
+    "savedTitle": "All changes are saved on the report server",
     "addNewPage": "Add New Page",
     "bandHeight": "{bandName} Height: {height}px",
     "pageButton": "Page",
     "more": "More tools",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "nameTooLong": "Name too long\nA template name can have at most {max} characters; the rest was cut off."
   },
   "help": {
     "menu": {
@@ -939,28 +925,16 @@
       "home": {
         "welcomeTitle": "Welcome to Report Studio",
         "welcomeText": "This is where you make templates for your project reports. Would you like a one-minute look around?",
-        "createTitle": "Start a new template",
-        "createText": "Click Create a new template to start one. You design it on a page, much like a document; each time it runs it makes a report.",
+        "createTitle": "Create a template",
+        "createText": "Click Create template: a new template opens in the designer with a name of its own (Untitled Template, 2, 3…). Click its name at the top to rename it.",
         "navTitle": "Find your way",
-        "navText": "Templates shows the templates you can use, My templates the ones you made, and Activity what changed lately.",
+        "navText": "Templates shows the report server's templates: the default ones and your organisation's own.",
         "searchTitle": "Find a template",
-        "searchText": "Type part of a template's name and press Enter: My templates shows the ones that match.",
+        "searchText": "Type part of a template's name: the matching templates show in a list under the box. Click one to open it.",
         "accountTitle": "Your account",
-        "accountText": "Click your initial to change the language (English or Bahasa Melayu) or to sign out.",
+        "accountText": "Your picture opens your account menu: change the language, open Default Settings (the paper, margins, font and sections every new template starts with) or sign out.",
         "helpTitle": "Help is always here",
         "helpText": "Click Help any time to take this tour again or to read the Quick guide."
-      },
-      "templates": {
-        "listTitle": "Your templates",
-        "listText": "Every template you have made. Click one to open it in the designer.",
-        "viewTitle": "Cards or a list",
-        "viewText": "Switch between cards with a picture and a list with the dates, like a file folder.",
-        "orderTitle": "Their order",
-        "orderText": "Choose the order of the cards here. In the list, click a column title to sort by it, and choose how many rows a page shows.",
-        "actionsTitle": "Open, rename, copy or delete",
-        "actionsText": "The three dots on a card, or the buttons at the end of a row, open, rename, copy or delete a template. Each one asks before it does anything.",
-        "searchTitle": "Find a template",
-        "searchText": "Type part of a name here: the list shows only the templates that match."
       },
       "designer": {
         "welcomeTitle": "Welcome to the template designer",
@@ -972,13 +946,15 @@
         "pageTitle": "Your page",
         "pageText": "This is what will print. Click something to select it, drag it to move it, and double-click text to type in it.",
         "panelTitle": "Change how it looks",
-        "panelText": "When something is selected, its size, colours and text are here; with nothing selected, the settings of the whole template. The AI Assistant tab can design for you.",
+        "panelText": "When something is selected, its size, colours and text are here; with nothing selected, the settings of the whole template.",
         "pagesTitle": "Add pages",
         "pagesText": "Click Page to add another page, a cover page or a table of contents.",
         "previewTitle": "See the result",
         "previewText": "Click Preview PDF to see exactly what will print. Your work is saved by itself as you go.",
         "helpTitle": "Need help again?",
-        "helpText": "Click Help any time for this tour, the Quick guide, keyboard and mouse shortcuts and help for every element."
+        "helpText": "Click Help any time for this tour, the Quick guide, keyboard and mouse shortcuts and help for every element.",
+        "accountTitle": "Your Default Settings",
+        "accountText": "Your picture at the top right opens Default Settings: the paper, margins, font and sections every new template starts with. To change only this template, use the Settings tab on the right."
       }
     },
     "guide": {
@@ -1002,8 +978,8 @@
         "pagesText": "Use Page at the top to add another page, a cover page or a table of contents.",
         "aiTitle": "Let the AI help",
         "aiText": "Open the AI Assistant tab on the right and write what you need, for example “Make a cover page for the March report”.",
-        "previewTitle": "Check and download",
-        "previewText": "Click Preview PDF to see exactly what the report will look like. Download saves a copy of the template on your computer."
+        "previewTitle": "Check the PDF",
+        "previewText": "Click Preview PDF to see exactly what the report will look like. The template is saved on the report server first, so the PDF shows your latest changes."
       },
       "tipsTitle": "Good to know",
       "tips": {
@@ -1013,8 +989,8 @@
         "nudge": "Hold Shift and press the arrow keys to move a selected item a little.",
         "dragScroll": "To move an item to another page, drag it and roll the mouse wheel, or hold it near the top or bottom edge: the pages scroll and the item comes with you.",
         "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
-        "saved": "Your work is saved by itself in this browser as you go.",
-        "open": "Your templates are on the home page and in My templates: click one to open it. In the designer, File → Open (Ctrl+O) opens another one or a .jrxml file from your computer.",
+        "saved": "Your template is saved on the report server a moment after you stop editing, and at once when you leave it. Press Ctrl+S (⌘+S on a Mac) to save straight away.",
+        "open": "Your templates are on the Templates page (the menu on the left). The search box at the top finds one by name.",
         "keys": "More keys that save you clicks are in the Keyboard shortcuts tab above."
       },
       "tourHint": "New here? A one-minute tour shows you where everything is.",
@@ -1064,18 +1040,20 @@
       "cellPrevious": "Previous cell",
       "cellClear": "Clear the chosen cells",
       "tableClose": "Close the cell; press again to close the table",
-      "crop": "Choose a picture, or crop it",
+      "crop": "Choose a picture (from the project's photos or your computer), or crop it",
       "cropApply": "Keep the crop",
       "cropCancel": "Cancel the crop",
+      "pictureUsePhoto": "Choose a picture: use a project photo straight away (double-click it)",
+      "pictureChooserClose": "Close the Choose a picture window",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "zoomWheel": "Zoom in or out",
       "resetZoom": "Go back to the normal zoom",
-      "toggleBottomPanel": "Show or hide Default Settings",
-      "panelDown": "Bring the full-height Default Settings back down",
+      "toggleBottomPanel": "Show or hide the developer panel (JRXML Content, Report Bands, settings JSON)",
+      "panelDown": "Bring the full-height developer panel back down",
       "newTemplate": "Start a new template",
       "openTemplate": "Open a template (yours or a file from your computer)",
-      "save": "Save now (it also saves by itself)",
+      "save": "Save to the report server now (it also saves by itself)",
       "aiSend": "Send your message",
       "aiNewLine": "New line in your message",
       "aiClear": "Clear the conversation (while the AI Assistant tab is open)",
@@ -1094,7 +1072,7 @@
       "hide": "Hide this tip",
       "report": "Nothing is selected, so these are this template's Template Settings: paper, margins, font and page sections. Click something on the page to change it instead.",
       "textField": "Text on the page. Double-click it on the page to type. Change its font, size and colours here.",
-      "image": "A picture. Drop a picture file from your computer onto it, or choose one here. Pick a shape, such as Circle or Rounded, in Basic Settings.",
+      "image": "A picture. Double-click it, or use Choose picture here, to pick one of the project's photos or a file from your computer. Pick a shape, such as Circle or Rounded, in Basic Settings.",
       "line": "A line to separate parts of the page. Change its colour and thickness here.",
       "rectangle": "A shape for bars, rules and backgrounds. To keep text or pictures together on a coloured panel, use a Box instead.",
       "ellipse": "A circle or oval. For a status, pick green, amber or red in Basic Settings.",
@@ -1107,6 +1085,7 @@
       "pageNumber": "Page numbers that fill in by themselves. Choose how they look and which pages get a number.",
       "dateTime": "A date that fills itself in, such as the day the report is printed. Choose which date and how it looks.",
       "pageBorder": "A border around every page. Change its line, colour and corners here.",
+      "watermark": "Faint text or a faded picture behind every page. Choose what it shows and how strong it prints. To come back to it later, open the ⋯ menu above any page and choose Change watermark.",
       "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
       "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents.",
       "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there.",
@@ -1128,7 +1107,9 @@
       "chartTitle": "Setting up a chart",
       "chartText": "Double-click the chart to choose the data it shows.",
       "locationTitle": "A map and an address",
-      "locationText": "Type the place on the right, or drag Location from Report Data onto it. Or click the small map on the right to put the pin there."
+      "locationText": "Type the place on the right, or drag Location from Report Data onto it. Or click the small map on the right to put the pin there.",
+      "watermarkTitle": "Behind every page",
+      "watermarkText": "The watermark can't be clicked on the page, so it never gets in the way. To change it later, open the ⋯ menu above any page and choose Change watermark."
     },
     "guides": {
       "title": "Step-by-step guides",
@@ -1287,9 +1268,9 @@
         "aiPrompt": "Add a picture spot for the project photo.",
         "steps": {
           "addTitle": "Add a picture spot",
-          "addText": "Click Image in the Element Library.",
+          "addText": "Click Image in the Element Library and choose Project photos or From my computer.",
           "pictureTitle": "Put a picture in it",
-          "pictureText": "Drop a picture file from your computer onto the spot, or click it and choose one on the right.",
+          "pictureText": "Double-click the spot and choose one of the project's photos, or a picture from your computer. You can also drop a picture file onto it.",
           "settingsTitle": "Choose its shape",
           "settingsText": "Click the picture. On the right you can round its corners or make it a circle.",
           "previewTitle": "Check it",
@@ -1385,6 +1366,19 @@
           "addText": "Click Page Border in the Element Library. A template has one at most.",
           "settingsTitle": "Choose its look",
           "settingsText": "Click the border line on the page. Its line and corners are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "watermark": {
+        "title": "Add a watermark",
+        "intro": "Faint words such as DRAFT, or a faded logo, behind every page.",
+        "aiPrompt": "Add a light grey DRAFT watermark across every page.",
+        "steps": {
+          "addTitle": "Add a watermark",
+          "addText": "Click Watermark in the Element Library, or Add watermark in the ⋯ menu above a page. It goes behind every page.",
+          "settingsTitle": "Choose what it shows",
+          "settingsText": "Open the ⋯ menu above any page and choose Change watermark, then type its words or choose a picture and set how strong it prints.",
           "previewTitle": "Check it",
           "previewText": "Click Preview PDF at the top to see exactly what will print."
         }
@@ -1605,6 +1599,7 @@
       "create_date": "Add date",
       "create_location": "Add location",
       "create_page_border": "Add page border",
+      "create_watermark": "Add watermark",
       "create_preset": "Add ready-made piece",
       "update_element": "Change element",
       "move_element": "Move element",
@@ -1879,7 +1874,8 @@
     "madeShorter": "Made shorter to fit\nIt was taller than {band} can be.",
     "tooTall": "Too tall for {band}\nMake it smaller, or split it into two parts.",
     "movedIn": "Kept inside the page\nIt went past the edge of the page.",
-    "keptInside": "Kept inside {band}\nThat value would go past its edge, so it was set to {value}."
+    "keptInside": "Kept inside {band}\nThat value would go past its edge, so it was set to {value}.",
+    "keptMinimum": "Kept at {value} px\nIts content needs at least this much room, so it was set to {value}."
   },
   "customTable": {
     "placeholderHeader": "Heading {n}",
@@ -2270,7 +2266,7 @@
     },
     "data": "Data",
     "dataFrom": "{source} · {project}",
-    "dataHint": "Drag a source from Report Data onto the chart, or set it up here. Until then the chart shows sample numbers and prints nothing.",
+    "dataHint": "Drag a table from Report Data onto the chart, or set it up here. Until then the chart shows sample numbers and prints nothing.",
     "setUpData": "Set up data",
     "editData": "Edit data",
     "noData": "No data",
@@ -2295,29 +2291,28 @@
       }
     },
     "measures": {
-      "countOf": "Count",
-      "sumOf": "Total {column}",
-      "avgOf": "Average {column}",
-      "minOf": "Lowest {column}",
-      "maxOf": "Highest {column}"
+      "countOf": "Records",
+      "sumOf": "Sum {column}",
+      "avgOf": "Avg {column}",
+      "minOf": "Min {column}",
+      "maxOf": "Max {column}"
     },
     "aggregations": {
-      "count": "Count rows",
-      "sum": "Total of",
-      "avg": "Average of",
-      "min": "Lowest of",
-      "max": "Highest of"
+      "sum": "Sum",
+      "avg": "Avg",
+      "min": "Min",
+      "max": "Max"
     },
     "granularities": {
-      "day": "By day",
-      "week": "By week",
-      "month": "By month",
-      "quarter": "By quarter",
-      "year": "By year"
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "quarter": "Quarter",
+      "year": "Year"
     },
     "states": {
       "sample": "Sample data",
-      "sampleHint": "Sample numbers: drag a source from Report Data onto the chart, or double-click it to set up its data. Prints nothing until then.",
+      "sampleHint": "Sample numbers: drag a table from Report Data onto the chart, or double-click it to set up its data. Prints nothing until then.",
       "incomplete": "Finish the setup",
       "incompleteHint": "Choose what the chart shows (double-click it). Prints nothing until then.",
       "loading": "Loading…",
@@ -2328,33 +2323,54 @@
     "config": {
       "title": "Chart data",
       "replacesData": "Replaces the chart's data from {source}.",
-      "whatToShow": "What to show",
-      "categories": "Categories",
-      "overTime": "Over time",
-      "groups": "Groups",
-      "items": "Items in each group",
-      "chooseColumn": "Choose a column",
       "otherColumns": "Other columns (many different values)",
       "cantGroup": "{name} (can't group by)",
-      "groupDatesBy": "Group dates",
-      "noTextColumns": "This source has no columns to group by.",
-      "noDateColumns": "This source has no date column. Bar charts can compare other columns.",
-      "value": "Number shown",
-      "series": "Lines or bars",
+      "noTextColumns": "This table has no columns to group by.",
+      "noDateColumns": "This table has no date column. Bar charts can compare other columns.",
       "calculation": "Calculation",
-      "ofColumn": "Column",
-      "splitBy": "One per",
-      "noSplit": "(none)",
-      "addSeries": "Add another",
-      "removeSeries": "Remove",
-      "gaugeMax": "Scale up to",
-      "automatic": "Automatic",
-      "stackBars": "Stack the bars",
-      "stackAreas": "Stack the areas",
-      "filters": "Which rows count",
       "basedOn": "Based on 1 row | Based on {count} rows",
       "incomplete": "Choose what the chart shows.",
       "manyCategories": "{count} categories: every one prints, so the chart may be crowded on paper. A filter, a coarser date grouping (by month or year) or a wider chart helps."
+    },
+    "panel": {
+      "slots": {
+        "xAxis": "X-Axis",
+        "categoryAxis": "Category Axis",
+        "category": "Category",
+        "value": "Value",
+        "level1": "Level 1",
+        "level2": "Level 2"
+      },
+      "granularity": "Time granularity",
+      "numberOfRecords": "Number of records",
+      "blockTerms": {
+        "bar": "Bar",
+        "line": "Line",
+        "area": "Area"
+      },
+      "addBlock": "Add {term}",
+      "splitBy": "Split By",
+      "optional": "optional",
+      "noSplit": "— None —",
+      "layout": "Layout",
+      "stacked": "Stacked",
+      "grouped": "Grouped",
+      "showAs": "Show as",
+      "bar": "Bar",
+      "line": "Line",
+      "customizeColors": "Customize colors",
+      "hideColors": "Hide colors",
+      "resetColors": "Reset to default colors",
+      "numberColor": "Number color",
+      "gaugeRange": "Gauge range",
+      "rangeAuto": "Auto",
+      "rangeManual": "Manual",
+      "rangeMin": "Minimum",
+      "rangeMax": "Maximum",
+      "showLegend": "Show legend",
+      "widgetTitle": "Widget title",
+      "widgetDescription": "Description",
+      "widgetDescriptionPlaceholder": "Add a short note about this widget"
     }
   },
   "dataTable": {
@@ -2399,7 +2415,7 @@
       "tableName": "Table name",
       "columnCount": "1 column | {count} columns",
       "editData": "Edit data",
-      "emptyHint": "Drag a source from Table Data onto this table, or choose one here.",
+      "emptyHint": "Drag a table from Report Data onto this table, or choose one here.",
       "chooseData": "Choose data",
       "look": "Look",
       "headerHeight": "Header height",
@@ -2412,8 +2428,8 @@
       "project": "Project",
       "chooseProject": "Choose a project",
       "noProjects": "Choose a project at the top of the page first.",
-      "source": "Source",
-      "chooseSource": "Choose a source",
+      "source": "Table",
+      "chooseSource": "Choose a table",
       "replacesData": "Apply replaces this table's current data ({source}).",
       "sourceOption": "{name} ({count} rows)",
       "columns": "Columns",
@@ -2430,7 +2446,7 @@
       "rowsNote": "These apply to the table on the page and in the printed report, not just this preview.",
       "showTotals": "Add a totals row",
       "preview": "Preview",
-      "pickSourceFirst": "Choose a source to see its data",
+      "pickSourceFirst": "Choose a table to see its data",
       "rowCount": "1 row | {count} rows",
       "needColumn": "Choose at least one column",
       "apply": "Apply",
@@ -2439,11 +2455,9 @@
     "filter": {
       "containsChip": "contains “{words}”",
       "remove": "Remove",
-      "search": "Search {column}",
+      "search": "Search {column}…",
       "selectAll": "Select all",
-      "clear": "Clear",
       "clearAll": "Clear all",
-      "noMatchingValues": "No value matches your search",
       "min": "Min",
       "max": "Max",
       "from": "From",
@@ -2454,8 +2468,6 @@
       "onOrAfter": "From {value}",
       "onOrBefore": "Until {value}",
       "moreValues": "{values} +{count}",
-      "matchCount": "1 row matches | {count} rows match",
-      "movingRangeHint": "Today that is {from} to {to}.",
       "periods": {
         "thisMonth": "This month",
         "lastMonth": "Last month",
@@ -2464,13 +2476,14 @@
         "last30Days": "Last 30 days"
       },
       "filtersTitle": "Filters",
-      "fieldsShown": "Fields shown in this filter",
       "searchFields": "Search fields…",
       "noFieldsMatch": "No fields match “{words}”.",
-      "noFields": "No fields shown. Choose the fields to filter by with the button above.",
       "typeToSearch": "Type to search {column}…",
       "all": "All",
-      "clearAllHint": "Remove every filter"
+      "optional": "optional",
+      "addFilter": "Add filter",
+      "removeFilter": "Remove filter",
+      "noOptions": "No options found"
     },
     "sort": {
       "text": {
@@ -2596,6 +2609,78 @@
       "sortedOff": "Sorted: {now}. Click to go back to the default order"
     }
   },
+  "reportBands": {
+    "draft": "Draft",
+    "draftNote": "Built here from the design. The report server will store it as the template's Jmix report once templates are saved there (not yet).",
+    "views": {
+      "tree": "Bands",
+      "sent": "Sent",
+      "stored": "Stored"
+    },
+    "viewHints": {
+      "tree": "Each band loads one part of the template's data when the report runs.",
+      "sent": "Sent as \"bands\" with the template's name and JRXML when it is saved (PUT /v2/api/reporter/templates/{id}).",
+      "stored": "The report the server stores in REPORT_REPORT.xml (the server gives its own ids)."
+    },
+    "copied": "Copied",
+    "parametersTitle": "Run parameters",
+    "templateTitle": "Template",
+    "templateLine": "{code} · PDF · {className} (custom class)",
+    "empty": "No project data yet\nDrag a table, chart or project detail from Report Data: its band shows here.",
+    "today": "today",
+    "noProject": "no project chosen",
+    "groovy": "Groovy",
+    "dataSet": "Data set (Groovy)",
+    "request": "Request (jsonSourceText)",
+    "kinds": {
+      "projectValues": "Project details",
+      "entityRows": "Table rows",
+      "projectList": "Project list",
+      "aggregate": "Chart numbers",
+      "map": "Map and address"
+    },
+    "fills": {
+      "parameters": "fills {count} parameter | fills {count} parameters",
+      "table": "fills its table",
+      "chart": "fills its picture",
+      "map": "fills its map and address"
+    },
+    "fields": {
+      "name": "Band name",
+      "kind": "Kind",
+      "source": "Source",
+      "projectProperty": "Project through",
+      "fetchPlan": "Fetch plan",
+      "columns": "Fields",
+      "filters": "Filters",
+      "noFilters": "None (every row of the project)",
+      "sort": "Sort",
+      "sortAsc": "{property}, low to high",
+      "sortDesc": "{property}, high to low",
+      "maxRows": "Up to",
+      "maxRowsValue": "{count} rows",
+      "list": "List on the project",
+      "single": "one record",
+      "chartType": "Chart type",
+      "requests": "Requests",
+      "picture": "Picture",
+      "pictureSize": "{width} × {height} px",
+      "coordinates": "Coordinates",
+      "addressLines": "Address lines",
+      "zoom": "Zoom",
+      "linked": "linked record",
+      "userDefined": "user-defined field {code}"
+    },
+    "labels": {
+      "project": "Project details",
+      "chart": "Chart",
+      "map": "Location"
+    },
+    "parameters": {
+      "project": "Project",
+      "reportDate": "Report date"
+    }
+  },
   "reportData": {
     "title": "Report Data",
     "reload": "Reload projects and data",
@@ -2698,7 +2783,42 @@
       "tableNotOnSpecialPage": "Tables can't go on a cover or contents page."
     },
     "dragDate": "Drag onto the page: shows this project's date in the look you pick, and follows the template's project",
-    "chartFromSource": "Chart from this table: drag this icon onto the page, or click to add one"
+    "chartFromSource": "Chart from this table: drag this icon onto the page, or click to add one",
+    "tableGroups": {
+      "projectInformation": "PROJECT INFORMATION",
+      "contractManagement": "CONTRACT MANAGEMENT",
+      "procurementManagement": "PROCUREMENT MANAGEMENT",
+      "complianceManagement": "COMPLIANCE MANAGEMENT",
+      "sheManagement": "SHE MANAGEMENT",
+      "riskManagement": "RISK MANAGEMENT",
+      "qsheManagement": "QSHE MANAGEMENT",
+      "qualityManagement": "QUALITY MANAGEMENT",
+      "issueManagement": "ISSUE MANAGEMENT",
+      "otherTables": "OTHER TABLES"
+    },
+    "tableSections": {
+      "contractMonitoring": "Contract Monitoring",
+      "qsheAudit": "QSHE Audit/Assessment"
+    },
+    "tableNames": {
+      "project": "Project",
+      "progressFiles": "Project Progress File",
+      "contract": "Contract",
+      "payment": "Payment",
+      "variationOrder": "Variation Order",
+      "finalAccount": "Final Account",
+      "lad": "LAD",
+      "eot": "Extension of Time",
+      "procurementRegister": "Procurement Register",
+      "complianceRegister": "Compliance Register",
+      "incidentRegister": "Incident Register",
+      "riskRegister": "Project Risk Register",
+      "projectAudit": "Project Audit",
+      "qualityStandard": "Quality Standard",
+      "safetyHealth": "Safety & Health",
+      "qaqcRegister": "QA/QC Register",
+      "issueRegister": "Issue Register"
+    }
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3303,7 +3423,7 @@
       },
       "file": {
         "title": "File",
-        "text": "New starts a template. Open opens one of your templates, or a .jrxml file from your computer."
+        "text": "New makes a new template on the report server. Open opens a template from the report server, or a .jrxml file from your computer."
       },
       "undo": {
         "title": "Undo",
@@ -3334,8 +3454,8 @@
         "text": "Makes the page bigger or smaller on your screen; the printed size never changes. Use − and +, type a size, or pick one from the list."
       },
       "bottomPanel": {
-        "title": "Default Settings",
-        "text": "Opens Default Settings at the bottom: the paper, margins, font and page sections every new template starts with."
+        "title": "Developer panel",
+        "text": "Opens the developer panel at the bottom: JRXML Content, Report Bands and the settings JSON. Shown only on development servers."
       },
       "snap": {
         "title": "Snap & grid",
@@ -3378,14 +3498,14 @@
       },
       "pageSettings": {
         "title": "Default Settings",
-        "what": "What every new template starts with: its paper, margins, font, page sections and section heights. Open them with the Default Settings button at the top (Ctrl+B).",
+        "what": "What every new template starts with: its paper, margins, font, page sections and section heights. Open them from your account menu (your picture at the top right) → Default Settings.",
         "work": [
           "Paper, Page Margins, Font, Page Sections and Section Heights work as in Template Settings, but only for templates you create from now on.",
-          "Apply to this template copies one of them into the template you have open (one undo step).",
-          "Original on a card (or Reset all to original at the top) puts back what the app came with: A4 portrait, 20 px margins and the usual sections."
+          "Original on a card (or Reset all to original at the top) puts back what the app came with: A4 portrait, 20 px margins and the usual sections.",
+          "To use them in a template you already have, open it and click Use default on a card in Template Settings."
         ],
         "good": [
-          "They are kept in this browser: another computer starts with the original settings.",
+          "They are saved with your account, so every computer you sign in on starts with them.",
           "To change only the template you have open, use Template Settings."
         ]
       },
@@ -3439,10 +3559,10 @@
         "title": "Image",
         "what": "A picture or logo.",
         "when": "For photos, logos, plans and signatures.",
-        "add": "Click Image in the Element Library, or drag it to the spot you want.",
+        "add": "Click Image in the Element Library and choose where the picture is from (the project's photos or your computer), or drag the tile to the spot you want for an empty picture spot.",
         "work": [
-          "Drop a picture file from your computer onto it, double-click it, or use Upload Image in its properties (PNG or JPG, up to 4 MB).",
-          "Double-click a picture to crop it.",
+          "Double-click it, or use Choose picture in its properties, to pick one of the project's photos (filtered by date and tags) or a file from your computer (PNG or JPG, up to 4 MB). You can also drop a picture file onto it.",
+          "Double-click a picture to crop it; to change it, use Change image on it or Choose picture in its properties.",
           "Shape rounds it: Rounded, Soft, Circle, Pill and more. The shape follows the picture when you resize it.",
           "Drag your project's logo from Report Data onto it to use that logo."
         ],
@@ -3535,7 +3655,7 @@
         "good": [
           "Only charts with their data set up print.",
           "The numbers are fetched fresh every time the report runs.",
-          "For a register with a dashboard in ProjectNow CDP, the chart offers exactly that dashboard's fields: e.g. a QA/QC line chart starts on Planned Inspection Date by month, and One per can split it by Inspection Type.",
+          "For a register with a dashboard in ProjectNow CDP, the chart offers exactly that dashboard's fields: e.g. a QA/QC line chart starts on Planned Inspection Date by month, and Split By can split it by Inspection Type. The setup window is laid out like the dashboard's widget panel, with the same words.",
           "Columns with a fixed list of values (like Status), yes / no columns and dates make the best categories. Bar, line and area charts show a list's values in its own order; pie, donut and tree map put the largest first.",
           "Columns where almost every row is different (like Description) are listed under Other columns. Columns that link to another record (like Contract) can't be used as categories."
         ]
@@ -3634,6 +3754,26 @@
           "It prints on every page, cover and contents pages included, except a cover that fills the whole sheet."
         ]
       },
+      "watermark": {
+        "title": "Watermark",
+        "what": "Faint words such as DRAFT or CONFIDENTIAL, or a faded picture such as a logo, printed behind the content of every page.",
+        "when": "To mark a report as a draft or confidential, or to put your organisation's logo faintly behind every page.",
+        "add": "Click Watermark under Composite Elements, drag it onto a page, or choose Add watermark in the ⋯ menu above any page. A template has one watermark; the tile is turned off once there is one.",
+        "work": [
+          "What it shows: type its words (or pick DRAFT, CONFIDENTIAL…), or choose a picture.",
+          "How it looks: colour, bold and size for words; size and grey for a picture; and how strong it prints.",
+          "Angle: rising, level, falling or upright, or any angle with the slider.",
+          "Where on the page: once (in the middle, a corner or a side) or repeated across the whole page.",
+          "Which pages: with a cover or contents pages, choose whether they get it too.",
+          "It can't be clicked on the page: open the ⋯ menu above any page and choose Change watermark."
+        ],
+        "good": [
+          "It prints behind everything: filled boxes and table rows cover it, as on paper.",
+          "Words that wouldn't fit the page at their angle are made smaller by themselves.",
+          "It prints on the cover and contents pages too, even a cover that fills the whole sheet; choose which pages in Which pages.",
+          "Preview PDF shows exactly what prints."
+        ]
+      },
       "pageNumber": {
         "title": "Page Number",
         "what": "Page numbers that fill in by themselves, such as Page 1 of 12.",
@@ -3714,7 +3854,7 @@
       },
       "picture": {
         "title": "Image Name",
-        "text": "The picture shown. Upload one from your computer (PNG or JPG, up to 4 MB); its name is shown here."
+        "text": "The picture shown. Choose picture opens the project's photos (filter them by date and tags) or lets you use a file from your computer (PNG or JPG, up to 4 MB); its name is shown here."
       },
       "imageShape": {
         "title": "Shape",
@@ -3802,7 +3942,7 @@
       },
       "chartData": {
         "title": "Data",
-        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters. The filters open with the columns the chart groups by and its dates; the fields button adds others. For a register that has a dashboard in ProjectNow CDP (QA/QC, Procurement, Risk, Issue, EOT, LAD, Compliance, Incident and the audits), the chart offers the same fields as the dashboard there, with the same names, and starts the same way."
+        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters. Filters work as on a CDP dashboard: Add filter, choose the field, then its values. For a register that has a dashboard in ProjectNow CDP (QA/QC, Procurement, Risk, Issue, EOT, LAD, Compliance, Incident and the audits), the chart offers the same fields as the dashboard there, with the same names, and starts the same way."
       },
       "chartTitle": {
         "title": "Chart",
@@ -3886,7 +4026,7 @@
       },
       "templateFont": {
         "title": "Font",
-        "text": "The font and size new text starts with in this template, and whether it starts bold, italic or underlined."
+        "text": "The font and size new text starts with in this template. Make a text bold, italic or underlined with its own buttons when you type in it."
       },
       "templateBands": {
         "title": "Page Sections",
@@ -3932,6 +4072,31 @@
       "projectDateBefore": {
         "title": "Words before the date",
         "text": "Text printed in front of the date, for example “Start date:”. Nothing prints when the project has no date."
+      },
+      "watermarkContent": {
+        "title": "What it shows",
+        "text": "Words, such as DRAFT or CONFIDENTIAL, or a picture, such as your logo. Words can have more than one line.",
+        "example": "CONFIDENTIAL, or two lines: DRAFT / Not for release"
+      },
+      "watermarkLook": {
+        "title": "How it looks",
+        "text": "The colour, boldness and size of the words, or the size of the picture and whether it is washed out to grey. How strong sets how faint it prints: Light (15%) is usual."
+      },
+      "watermarkAngle": {
+        "title": "Angle",
+        "text": "How it is turned. Rising runs from bottom left to top right, the usual watermark. Use the slider for any angle."
+      },
+      "watermarkPlace": {
+        "title": "Where on the page",
+        "text": "Once, in the spot you choose (the middle, a corner or a side), or repeated in rows across the whole page."
+      },
+      "watermarkPages": {
+        "title": "Which pages",
+        "text": "Every page, every page except the cover, or only the normal pages (not the cover and contents pages)."
+      },
+      "watermarkPageMenu": {
+        "title": "Watermark",
+        "text": "Faint text or a faded logo printed behind every page of this template. It can't be clicked on the page: open the ⋯ menu above any page and choose Change watermark to come back to these settings."
       }
     }
   },
@@ -3948,21 +4113,23 @@
     "scopeHint": "These settings change only the template you have open. New templates start from Default Settings."
   },
   "defaultSettings": {
-    "intro": "New templates start with these settings. To change the template you have open, use Template Settings on the right (click an empty part of the page).",
+    "saveFailed": "Couldn't save your Default Settings\nThey are kept in this browser and saved again with your next change.",
+    "intro": "New templates start with these settings. To change one template only, open it and use Template Settings (click an empty part of the page).",
     "reset": "Reset to the app's defaults",
     "resetDone": "Default Settings are back to the original settings.",
-    "apply": "Apply to this template",
-    "applied": "Applied to this template.",
     "bandsHint": "The sections every new template starts with. Detail, where your content goes, is always there.",
     "original": "Original",
     "originalDone": "Back to the original.",
-    "resetAll": "Reset all to original"
+    "resetAll": "Reset all to original",
+    "page": {
+      "eyebrow": "Account",
+      "title": "Default Settings",
+      "subtitle": "The paper, margins, font, page sections and section heights every new template starts with. Saved with your account."
+    }
   },
   "myTemplates": {
-    "count": "No templates | 1 template | {count} templates",
     "noMatch": "No template is called \"{query}\"",
     "noMatchHint": "Check the spelling, or try fewer words.",
-    "resultsFor": "Templates matching \"{query}\"",
     "clearSearch": "Clear",
     "columns": {
       "name": "Name",
@@ -3971,37 +4138,136 @@
       "owner": "Owner",
       "actions": "Actions"
     },
-    "sortBy": "Sort by",
-    "sort": {
-      "lastModified": "Last edited",
-      "createdAt": "Newest first",
-      "nameAsc": "Name A to Z",
-      "nameDesc": "Name Z to A"
-    },
     "view": "Show templates as",
     "views": {
       "grid": "Grid",
       "list": "List"
     },
-    "loadFailed": "Your templates couldn't be loaded.",
-    "tryAgain": "Try again",
-    "empty": "You have no templates yet.",
-    "showing": "Showing {shown} of {total}",
-    "loadMore": "Load more"
+    "tryAgain": "Try again"
+  },
+  "reportCatalog": {
+    "save": {
+      "failed": "Couldn't save the template\n{reason} It is saved again with your next change, or press Ctrl+S to try now."
+    },
+    "errors": {
+      "server": "The report server didn't say why.",
+      "status": "HTTP {status} · {reason}"
+    },
+    "templates": {
+      "subtitle": "Start from a default template, open one of yours, or create a new one.",
+      "create": "Create template"
+    },
+    "defaultTemplates": {
+      "title": "Default templates",
+      "hint": "Ready-made templates from the report server. Open one to look at it and preview it, or duplicate it to get a copy you can change.",
+      "badge": "Default",
+      "loadFailed": "The default templates couldn't be loaded from the report server.",
+      "showMore": "Show more ({shown} of {total})",
+      "opening": "Opening the template…",
+      "opened": "Default template opened\nYou can look at it and preview it. Duplicate it to change it.",
+      "openFailed": "Couldn't open the default template\n{reason}",
+      "errors": {
+        "unknown": "The report server didn't say why."
+      },
+      "contentProblems": {
+        "noContent": "Opened as an empty layout\n\"{name}\" has no template content on the report server.",
+        "notJrxml": "Opened as an empty layout\nThe content of \"{name}\" on the report server isn't a JRXML template (it may be an HTML template).",
+        "badJrxml": "Opened as an empty layout\nThe JRXML of \"{name}\" isn't in a format the designer can open."
+      },
+      "openAction": "Open",
+      "openHint": "Look at this template in the designer",
+      "barTitle": "Default template: {name}.",
+      "barText": "You can look at it and preview it. To change it, duplicate it to get your own copy.",
+      "owner": "Report server",
+      "readOnly": "This default template can't be changed\nDuplicate it to get your own copy to work on."
+    },
+    "serverTemplates": {
+      "title": "Templates",
+      "hint": "Your organisation's templates on the report server. Open one to work on it, or duplicate it to get a copy.",
+      "loadFailed": "The templates couldn't be loaded from the report server."
+    },
+    "create": {
+      "failed": "Couldn't create the template on the server\n{reason}",
+      "creating": "Creating the template…",
+      "notFound": "Template created, but not found\n\"{name}\" was made on the server but couldn't be opened. Open it from Templates."
+    },
+    "serverDelete": {
+      "done": "Template deleted\n\"{name}\" was removed from Templates.",
+      "failed": "Couldn't delete the template\n{reason}"
+    },
+    "copy": {
+      "title": "Duplicate template",
+      "message": "Make a copy of \"{name}\"? The copy is added to Templates.",
+      "done": "Template duplicated\nThe copy of \"{name}\" is in Templates.",
+      "failed": "Couldn't duplicate the template\n{reason}",
+      "hint": "Make a copy of this template in Templates",
+      "openTitle": "Open the copy?",
+      "openMessage": "\"{name}\" is in Templates. Open it now to start working on it?",
+      "openConfirm": "Open copy",
+      "openCancel": "Not now"
+    }
   },
   "openTemplate": {
     "title": "Open a template",
     "tabs": {
-      "mine": "My templates",
+      "mine": "Templates",
       "computer": "From my computer"
     },
     "openNow": "Open now",
-    "none": "You have no saved templates yet.",
+    "none": "There are no templates on the report server yet.",
     "dropTitle": "Drop a .jrxml file here, or click to choose one",
     "dropHint": "A template downloaded from here or made in Jaspersoft Studio",
-    "addedNote": "It opens as a new template and is added to My templates.",
-    "seeAll": "See all in My Templates",
-    "notFound": "Template not found\nIt may have been deleted."
+    "addedNote": "It becomes a new template on the report server, named after the file, with this file's layout.",
+    "seeAll": "See all on the Templates page"
+  },
+  "pictureChooser": {
+    "title": "Choose a picture",
+    "tabs": {
+      "photos": "Project photos",
+      "computer": "From my computer"
+    },
+    "project": "Project",
+    "filterBy": "Filter by",
+    "dateKinds": {
+      "uploadedAt": "Upload date",
+      "photoTakenAt": "Date taken"
+    },
+    "period": "Period",
+    "periods": {
+      "all": "All time",
+      "today": "Today",
+      "7d": "Last 7 days",
+      "15d": "Last 15 days",
+      "1m": "Last month",
+      "3m": "Last 3 months",
+      "6m": "Last 6 months",
+      "custom": "Choose dates"
+    },
+    "from": "From",
+    "to": "To",
+    "clearFilters": "Clear filters",
+    "tags": "Tags",
+    "count": "No photos | 1 photo | {count} photos",
+    "none": "This project has no photos yet",
+    "noneHint": "Photos added to the project's Photos page in CDP show here. You can also use a picture from your computer.",
+    "noMatch": "No photos match these filters",
+    "noMatchHint": "Try another period, or fewer tags.",
+    "loadFailed": "The photos couldn't be loaded",
+    "retry": "Try again",
+    "noProject": "No project chosen yet",
+    "noProjectHint": "Choose this template's project at the top, next to its name, to pick from its photos. Or use a picture from your computer.",
+    "chooseHint": "Click a photo to choose it, or double-click to use it straight away.",
+    "usePhoto": "Use this photo",
+    "dropTitle": "Drop a picture here, or click to choose one",
+    "cantUse": "Can't use this photo\nIts file can't be found. Please choose another one.",
+    "tile": {
+      "chooseKind": "Where is the picture from?",
+      "photos": "Project photos",
+      "photosDesc": "One of the photos of this template's project, filtered by date and tags.",
+      "computer": "From my computer",
+      "computerDesc": "A PNG or JPG file, up to 4 MB.",
+      "dragHint": "Or drag the tile onto the page for an empty picture spot, then double-click it."
+    }
   },
   "location": {
     "fields": {
@@ -4088,6 +4354,97 @@
       "followOff": "Tick it to show the project's place, and follow it."
     },
     "addressPlaceholder": "Address"
+  },
+  "watermark": {
+    "exists": "This template already has a watermark\nIt is selected: change it on the right. Later, use Change watermark in the ⋯ menu above any page.",
+    "tileExists": "It can't be clicked on the page: open the ⋯ menu above any page and choose Change watermark.",
+    "canvasTag": "Watermark",
+    "canvasNoPicture": "Choose a picture for the watermark on the right",
+    "canvasPictureFailed": "The watermark picture couldn't be loaded",
+    "canvasNoText": "Type the watermark's words on the right",
+    "words": {
+      "DRAFT": "DRAFT",
+      "CONFIDENTIAL": "CONFIDENTIAL",
+      "COPY": "COPY",
+      "SAMPLE": "SAMPLE",
+      "APPROVED": "APPROVED"
+    },
+    "kinds": {
+      "text": "Text",
+      "picture": "Picture"
+    },
+    "sizes": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Very large"
+    },
+    "strengths": {
+      "veryLight": "Very light",
+      "light": "Light",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "angles": {
+      "diagonalUp": "Rising",
+      "straight": "Level",
+      "diagonalDown": "Falling",
+      "upwards": "Upright"
+    },
+    "places": {
+      "topLeft": "Top left",
+      "top": "Top",
+      "topRight": "Top right",
+      "left": "Left",
+      "center": "Middle of the page",
+      "right": "Right",
+      "bottomLeft": "Bottom left",
+      "bottom": "Bottom",
+      "bottomRight": "Bottom right"
+    },
+    "pages": {
+      "all": "Every page",
+      "notCover": "Every page except the cover",
+      "normal": "Only the normal pages (not the cover and contents pages)"
+    },
+    "panel": {
+      "contentTitle": "What it shows",
+      "words": "Words",
+      "wordsPlaceholder": "e.g. DRAFT",
+      "wordsHint": "Press Enter for a second line. Words that are too long for the page are made smaller.",
+      "picture": "Picture",
+      "choosePicture": "Choose picture",
+      "changePicture": "Change",
+      "noPicture": "No picture yet",
+      "pictureNoName": "Picture",
+      "pictureFailed": "The picture couldn't be loaded. Check your connection.",
+      "retry": "Try again",
+      "grey": "Wash out to grey",
+      "pictureHint": "A logo or a stamp works best. It is faded as you set below.",
+      "lookTitle": "How it looks",
+      "colour": "Colour",
+      "bold": "Bold",
+      "size": "Size",
+      "sizeOwn": "Or your own size",
+      "sizeHint": "Made smaller by itself when it wouldn't fit the page.",
+      "pictureSize": "Size",
+      "pictureSizeValue": "{n}% of the page width",
+      "strength": "How strong",
+      "tooStrong": "This strong, the words printed over it get hard to read. Light (15%) is usual.",
+      "angleTitle": "Angle",
+      "placeTitle": "Where on the page",
+      "once": "Once",
+      "repeated": "Repeated",
+      "spot": "Spot",
+      "repeatedHint": "Repeated in rows across the whole page.",
+      "pagesTitle": "Which pages",
+      "remove": "Remove the watermark",
+      "focusNote": "While these settings are open, the page is faded so you can see the watermark clearly. In the PDF it prints behind the content."
+    },
+    "pageMenu": {
+      "add": "Add watermark",
+      "change": "Change watermark"
+    }
   },
   "colorPicker": {
     "mixed": "Mixed colours"
@@ -4235,5 +4592,16 @@
     "noSetup": "Rows from the project's {list}\nThis table lists every item the template's project has. Change its look and headings in its properties.",
     "rowsFrom": "{project} · {list} (from the project)",
     "hint": "Every item of this list in the template's project. Pick another project at the top and it shows that one's."
+  },
+  "defaultSettingsJson": {
+    "copied": "Copied",
+    "user": {
+      "badge": "Set by the user",
+      "hint": "The user's Default Settings and Snap & grid, saved with their account on the server (and kept in this browser). Changed only in Default Settings."
+    },
+    "developer": {
+      "badge": "Set in code",
+      "hint": "What the app comes with (Original in Default Settings). Read only: changed only in the code."
+    }
   }
 }

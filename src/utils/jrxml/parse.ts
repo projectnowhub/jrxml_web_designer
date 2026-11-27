@@ -25,10 +25,17 @@ import {
   unguardPrintWhen,
 } from "../specialPages";
 import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
+import { isWatermark } from "../watermark/watermarkElement";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
 import { BARCODE_TYPE_IDS, BARCODE_VALUES_PROPERTY, parseBarcodeValues } from "../barcode/barcodeTypes";
 import { joinSplitReferences } from "./javaString";
+import {
+  SECTION_LIMITS_PROPERTY,
+  TEMPLATE_FONT_PROPERTY,
+  parseSectionLimits,
+  parseTemplateFont,
+} from "./templateSettingsXml";
 import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
@@ -326,6 +333,11 @@ export function parseJRXMLContent(jrxmlContent: string): {
       elements = elements
         .filter((el) => !el.properties?.some((p: any) => p.name === CONTENTS_PAGE_PROPERTY))
         .map((el) => {
+          // A watermark's pages come from its setup when it is written
+          if (isWatermark(el)) {
+            delete el.printWhenExpression;
+            return el;
+          }
           const own = unguardPrintWhen(el.printWhenExpression);
           if (own !== el.printWhenExpression) el.printWhenExpression = own;
           return el;
@@ -616,6 +628,11 @@ export function parseJRXMLContent(jrxmlContent: string): {
     reportProperties.find((p) => p.name === REPORT_PROJECTS_PROPERTY)?.value,
   );
   if (projects.length) properties.projects = projects;
+  // The font new text starts with and the sections' limits (Template Settings)
+  const templateFont = parseTemplateFont(reportProperties.find((p) => p.name === TEMPLATE_FONT_PROPERTY)?.value);
+  if (templateFont) properties.defaultFont = templateFont;
+  const sectionLimits = parseSectionLimits(reportProperties.find((p) => p.name === SECTION_LIMITS_PROPERTY)?.value);
+  if (sectionLimits) properties.bandLimits = sectionLimits;
 
   // Linked project details take their values from their parameters' defaults
   restoreProjectValueDefaults(bands, projectValueDefaults);
@@ -639,7 +656,9 @@ export function parseJRXMLContent(jrxmlContent: string): {
         p.name !== REPORT_PROJECTS_PROPERTY &&
         p.name !== SPECIAL_PAGES_PROPERTY &&
         p.name !== HEADING_NUMBERS_PROPERTY &&
-        p.name !== CONTENTS_STYLES_PROPERTY,
+        p.name !== CONTENTS_STYLES_PROPERTY &&
+        p.name !== TEMPLATE_FONT_PROPERTY &&
+        p.name !== SECTION_LIMITS_PROPERTY,
     ),
   };
 }

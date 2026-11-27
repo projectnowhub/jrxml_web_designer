@@ -26,36 +26,17 @@
         <span>{{ t('fileManager.openLocalFile') }}</span>
         <span class="menu-keys"><kbd>{{ keyLabel('Mod') }}</kbd><kbd>O</kbd></span>
       </div>
-      <div class="menu-divider"></div>
-      <div class="menu-item menu-item-danger" @click="askDeleteAllFiles">
-        <Trash2 class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t('fileManager.deleteAllFiles') }}</span>
-      </div>
     </div>
 
-    <OpenTemplateModal
-      v-model:visible="showOpen"
-      @load-file="emit('load-file', $event)"
-      @open-jrxml="emit('open-jrxml', $event)"
-    />
-
-    <!-- Delete all confirmation dialog -->
-    <ConfirmModal
-      v-model:visible="showDeleteAllModal"
-      :title="t('fileManager.deleteAllFiles')"
-      :message="t('fileManager.deleteAllFilesConfirm')"
-      @confirm="emit('delete-all-files')"
-    />
+    <OpenTemplateModal v-model:visible="showOpen" @open-jrxml="emit('open-jrxml', $event)" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { FilePlus, FolderOpen, Trash2 } from '@lucide/vue';
+import { FilePlus, FolderOpen } from '@lucide/vue';
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { NButton } from 'naive-ui';
-import type { DesignerFile } from '@/types/designerFile';
-import ConfirmModal from '../../modals/ConfirmModal.vue';
 import OpenTemplateModal from '../../modals/OpenTemplateModal.vue';
 import { keyLabel } from '@/utils/helpDocs';
 
@@ -63,9 +44,7 @@ const { t } = useI18n();
 
 interface Emits {
   (e: 'create-new-file'): void;
-  (e: 'load-file', file: DesignerFile): void;
   (e: 'open-jrxml', file: { name: string; content: string }): void;
-  (e: 'delete-all-files'): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -76,17 +55,10 @@ defineProps<{ compact?: boolean }>();
 // File management related state
 const showFileMenu = ref(false);
 const fileMenuContainer = ref<HTMLElement | null>(null);
-const showDeleteAllModal = ref(false);
 
 // Toggle the file menu
 function toggleFileMenu() {
   showFileMenu.value = !showFileMenu.value;
-}
-
-// Delete every report saved in this browser (asks first)
-function askDeleteAllFiles() {
-  showFileMenu.value = false;
-  showDeleteAllModal.value = true;
 }
 
 // Create a new file
@@ -95,7 +67,7 @@ function createNewFile() {
   emit('create-new-file');
 }
 
-// Open: a saved template or a .jrxml file from the computer (OpenTemplateModal)
+// Open: a template on the report server or a .jrxml file from the computer (OpenTemplateModal)
 const showOpen = ref(false);
 function openLocalFile() {
   showFileMenu.value = false;
@@ -218,21 +190,5 @@ onUnmounted(() => {
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 600;
-}
-
-/* Same look as Sign out in the account menu */
-.menu-item-danger {
-  color: #e5484d;
-}
-
-.menu-item-danger:hover {
-  background: rgba(229, 72, 77, 0.09);
-  color: #d0342e;
-}
-
-.menu-divider {
-  height: 1px;
-  margin: 4px 0;
-  background: rgba(28, 27, 38, 0.08);
 }
 </style>

@@ -47,150 +47,6 @@
       </div>
     </div>
 
-    <!-- Page settings tab -->
-    <div
-      class="tab-content page-settings-tab"
-      v-show="activeTab === 'pageSettings'"
-    >
-      <!-- Default Settings: what new reports start with (kept in this browser,
-           utils/reportDefaults.ts). This report's own settings are Template
-           Settings, in the right panel when nothing is selected. -->
-      <div class="defaults-intro">
-        <Info :size="15" :stroke-width="2" aria-hidden="true" />
-        <span>{{ t("defaultSettings.intro") }}</span>
-        <button type="button" class="defaults-reset" @click="resetAllToOriginal">
-          <RotateCcw :size="12" :stroke-width="2.2" aria-hidden="true" />
-          {{ t("defaultSettings.resetAll") }}
-        </button>
-      </div>
-      <div class="settings-grid">
-        <PageSetupSection
-          v-for="card in DEFAULT_CARDS"
-          :key="card.section"
-          :section="card.section"
-          :title="t(card.title)"
-          :value="defaults"
-          :bands-hint="t('defaultSettings.bandsHint')"
-          @change="changeDefaults"
-        >
-          <template #actions>
-            <span class="defaults-actions">
-              <button type="button" class="defaults-reset" @click="useOriginal(card.section)">
-                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
-                {{ t("defaultSettings.original") }}
-              </button>
-              <button type="button" class="defaults-apply" @click="applyToThisReport(card.section)">
-                {{ t("defaultSettings.apply") }}
-              </button>
-            </span>
-          </template>
-        </PageSetupSection>
-
-        <!-- Band height limits constraints -->
-        <div class="settings-section band-limits-section">
-          <div class="band-limits-header">
-            <div class="band-limits-title-area">
-              <h5>{{ t("bottomPanel.defaultBandSettings") }}</h5>
-            </div>
-            <span class="defaults-actions">
-              <button type="button" class="defaults-reset" @click="resetBandLimitsToDefault">
-                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
-                {{ t("defaultSettings.original") }}
-              </button>
-              <button type="button" class="defaults-apply" @click="applyGlobalDefaultsToCurrentTemplate">
-                {{ t("defaultSettings.apply") }}
-              </button>
-            </span>
-          </div>
-          <div class="band-limits-grid">
-            <div
-              v-for="bType in resizableBandTypes"
-              :key="bType.type"
-              class="band-limit-card"
-              :style="{ order: pageOrder(bType.type) }"
-            >
-              <div class="band-limit-title">
-                {{ getBandDisplayName(bType.type) }}
-              </div>
-              <div class="band-limit-inputs">
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
-                  <div class="input-unit-wrapper">
-                    <input v-live-change
-                      v-model.number="
-                        getGlobalBandConfig(bType.type).defaultHeight
-                      "
-                      type="number"
-                      min="10"
-                      step="1"
-                      @change="onDefaultHeightChange(bType.type)"
-                      @blur="onDefaultHeightChange(bType.type)"
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.minHeight')">{{ t("bottomPanel.minShort") }}</label>
-                  <div class="input-unit-wrapper">
-                    <input v-live-change
-                      v-model.number="getGlobalBandConfig(bType.type).min"
-                      type="number"
-                      min="10"
-                      step="1"
-                      @change="onGlobalMinChange(bType.type)"
-                      @blur="onGlobalMinChange(bType.type)"
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.maxHeight')">{{ t("bottomPanel.maxShort") }}</label>
-                  <div class="input-unit-wrapper">
-                    <input v-live-change
-                      v-model.number="getGlobalBandConfig(bType.type).max"
-                      type="number"
-                      :min="getGlobalBandConfig(bType.type).min || 10"
-                      :max="getMaxAllowedGlobalLimit(bType.type)"
-                      step="1"
-                      @change="onGlobalMaxChange(bType.type)"
-                      @blur="onGlobalMaxChange(bType.type)"
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
-            <div class="band-limit-card band-limit-card-detail" :style="{ order: pageOrder('detail') }">
-              <div class="band-limit-title">
-                <span>{{ t("bandNames.detail") }}</span>
-                <span class="band-badge-auto">{{
-                  t("properties.detailAutoCalculated")
-                }}</span>
-              </div>
-              <div class="band-limit-inputs">
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
-                  <div
-                    class="input-unit-wrapper is-disabled"
-                    :title="t('properties.detailAutoCalculatedHint')"
-                  >
-                    <input
-                      :value="defaultDetailCalculatedHeight"
-                      type="number"
-                      disabled
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- JRXML content tab -->
     <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
       <div class="jrxml-container">
@@ -398,13 +254,19 @@
       </div>
     </div>
 
-    <!-- details.json (developers): where the template's data comes from, for the report server -->
-    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'details'">
-      <div class="details-header">
-        <span class="details-note">{{ t("bottomPanel.detailsNote") }}</span>
-        <n-button type="default" size="small" @click="copyDetails">{{ t("bottomPanel.copy") }}</n-button>
-      </div>
-      <pre class="details-json">{{ detailsJson }}</pre>
+    <!-- Report bands (developers): where the template's data comes from, as the report server stores it -->
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'bands'">
+      <ReportBandsView :active="activeTab === 'bands'" />
+    </div>
+
+    <!-- User Defaults JSON (developers): the user's Default Settings as saved with their account, read only -->
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'userDefaults'">
+      <DefaultSettingsJsonView source="user" :active="activeTab === 'userDefaults'" />
+    </div>
+
+    <!-- Developer Defaults JSON (developers): what the app comes with, set only in code -->
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'developerDefaults'">
+      <DefaultSettingsJsonView source="developer" :active="activeTab === 'developerDefaults'" />
     </div>
   </ResizablePanel>
   </Collapse>
@@ -415,17 +277,15 @@
 import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
-import { useUserSettingsStore } from "@/stores/userSettings";
 import {
-  Braces,
   ChevronDown,
   ChevronUp,
   FileCode2,
-  Info,
-  SlidersHorizontal,
+  Layers,
+  Code,
+  UserCog,
   Maximize2,
   Minimize2,
-  RotateCcw,
   X,
 } from "@lucide/vue";
 import {
@@ -442,6 +302,8 @@ import notification from "@/utils/notification";
 import ResizablePanel from "./ResizablePanel.vue";
 import Collapse from "../common/Collapse.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
+import ReportBandsView from "./ReportBandsView.vue";
+import DefaultSettingsJsonView from "./DefaultSettingsJsonView.vue";
 
 import {
   validateJRXML,
@@ -451,28 +313,8 @@ import {
   type AutoFixResult,
 } from "../../utils/jrxml/xsdValidator";
 import { formatXml } from "../../utils/jrxml/formatXml";
-import { buildReportDetails } from "../../utils/reportDetails";
 
-import type { Band, ReportProperties } from "../../types";
-import {
-  UI_CONSTANTS,
-  PANEL_CONSTANTS,
-  BAND_TYPE_CONSTANTS,
-  DEFAULT_BAND_LIMITS,
-  DEVELOPER_DEFAULT_BAND_CONFIG,
-  GLOBAL_BAND_LIMITS_STORAGE_KEY,
-  getEffectiveDefaultBandConfig,
-  getEffectiveDefaultBandLimits,
-} from "../../constants/constants";
-import PageSetupSection, { type PageSetupValue } from "../designer/PageSetupSection.vue";
-import {
-  DEFAULT_BAND_CHOICES,
-  loadReportDefaults,
-  resetReportDefaults,
-  saveReportDefaults,
-  builtInReportDefaults,
-  type ReportDefaults,
-} from "../../utils/reportDefaults";
+import { PANEL_CONSTANTS } from "../../constants/constants";
 
 const { t } = useI18n();
 
@@ -486,7 +328,6 @@ function getBandDisplayName(bandType: string): string {
 interface Props {
   visible: boolean;
   initialHeight?: number;
-  allBandTypes: any[];
 }
 
 // Define component events
@@ -494,14 +335,11 @@ interface Emits {
   (e: "open-preview"): void;
   (e: "update:visible", value: boolean): void;
   (e: "size-change", value: number): void;
-  (e: "update:report-properties", value: any): void;
   (e: "update:jrxml-content", value: string): void;
   (e: "copy-jrxml"): void;
   (e: "save-jrxml"): void;
   (e: "regenerate-jrxml"): void;
   (e: "download-jrxml"): void;
-  // Before a page size/margin change (undo snapshot), and after it (fit content)
-  (e: "page-setup-change"): void;
 }
 
 // Use defineProps and defineEmits
@@ -510,49 +348,29 @@ const props = withDefaults(defineProps<Props>(), {
   initialHeight: PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT,
 });
 
-// Changes: an undo step before, the JRXML rewritten after
-const report = useReportStore();
-
 // Report, selection and editor state come from the stores
 const reportStore = useReportStore();
-const { reportProperties, bands, jrxmlContent } = storeToRefs(reportStore);
+const { jrxmlContent } = storeToRefs(reportStore);
 
 const emit = defineEmits<Emits>();
 
 // Tab-related state
-const activeTab = ref("pageSettings");
-// JRXML Content and Details JSON are for developers: shown locally and on the
-// dev server, never on staging or production (config/appEnvironment.ts), where
-// anything asking for them gets Page settings
+const activeTab = ref("jrxml");
+// Every tab is for developers: the panel is shown locally and on the dev
+// server only, never on staging or production (config/appEnvironment.ts).
+// Default Settings have their own page (account menu → Default Settings)
 const SHOW_JRXML_TAB = SHOW_DEVELOPER_TOOLS;
-watch(activeTab, (tab) => {
-  if ((tab === "jrxml" || tab === "details") && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
-});
 // Computed so the labels follow a language switch
 const tabs = computed(() => [
-  { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings"), icon: SlidersHorizontal },
   ...(SHOW_JRXML_TAB
     ? [
         { id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 },
-        { id: "details", name: t("bottomPanel.detailsJson"), icon: Braces },
+        { id: "bands", name: t("bottomPanel.reportBands"), icon: Layers },
+        { id: "userDefaults", name: t("bottomPanel.userDefaultsJson"), icon: UserCog },
+        { id: "developerDefaults", name: t("bottomPanel.developerDefaultsJson"), icon: Code },
       ]
     : []),
 ]);
-
-// details.json, rebuilt with the JRXML (shown only while its tab is open)
-const detailsJson = computed(() => {
-  if (activeTab.value !== "details") return "";
-  void reportStore.jrxmlVersion;
-  return JSON.stringify(buildReportDetails(bands.value, reportProperties.value?.projects?.[0]), null, 2);
-});
-const copyDetails = async () => {
-  try {
-    await navigator.clipboard.writeText(detailsJson.value);
-    notification.success(t("bottomPanel.detailsCopied"));
-  } catch {
-    notification.error(t("bottomPanel.copyFailed"));
-  }
-};
 
 // Bottom panel height
 const HEADER_HEIGHT = 56;
@@ -585,10 +403,6 @@ const updateMaxSize = () => {
   const top = header ? header.getBoundingClientRect().bottom : HEADER_HEIGHT;
   currentMaxSize.value = Math.max(150, Math.floor(window.innerHeight - top));
 };
-
-// Paper size definitions
-
-
 
 // PDF preview modal visibility state
 
@@ -672,274 +486,6 @@ const openPdfPreview = (): void => {
   }
   emit("open-preview");
 };
-
-// Computed property: local binding for reportProperties
-const localReportProperties = computed({
-  get: () => reportProperties.value,
-  set: (value) => emit("update:report-properties", value),
-});
-
-// The sections in page order (as Template Settings lists them), Detail included
-const PAGE_ORDER = ["pageHeader", "columnHeader", "detail", "columnFooter", "pageFooter"];
-const pageOrder = (type: string) => {
-  const index = PAGE_ORDER.indexOf(type);
-  return index === -1 ? PAGE_ORDER.length : index;
-};
-
-// Resizable band types list for limit constraints (excluding background and detail which is auto-calculated)
-const resizableBandTypes = computed(() => {
-  return (props.allBandTypes || [])
-    .filter((bt) => bt.type !== "background" && bt.type !== "detail")
-    .map((bt) => ({ type: bt.type }));
-});
-
-// Dedicated state for global default band limits (independent from active template)
-const globalDefaultBandLimits = ref<
-  Record<string, { min: number; max: number }>
->(getEffectiveDefaultBandLimits());
-// Dedicated state for global default band settings (independent from active template)
-const globalDefaultBandConfig = ref<
-  Record<string, { defaultHeight: number; min: number; max: number }>
->(getEffectiveDefaultBandConfig());
-
-const getGlobalBandConfig = (bandType: string) => {
-  if (!globalDefaultBandConfig.value[bandType]) {
-    const dev = DEVELOPER_DEFAULT_BAND_CONFIG[bandType] || {
-      defaultHeight: 50,
-      min: 20,
-      max: 70,
-    };
-    globalDefaultBandConfig.value[bandType] = { ...dev };
-  }
-  return globalDefaultBandConfig.value[bandType]!;
-};
-
-const standardActiveBands = [
-  BAND_TYPE_CONSTANTS.PAGE_HEADER,
-  BAND_TYPE_CONSTANTS.COLUMN_HEADER,
-  BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
-  BAND_TYPE_CONSTANTS.PAGE_FOOTER,
-];
-
-// Calculate remaining A4 space for Detail band based on configured default band heights
-const defaultDetailCalculatedHeight = computed(() => {
-  const pageH = localReportProperties.value?.pageHeight || 842;
-  const topM = localReportProperties.value?.topMargin || 20;
-  const bottomM = localReportProperties.value?.bottomMargin || 20;
-  const printableH = pageH - topM - bottomM;
-
-  let otherDefaults = 0;
-  standardActiveBands.forEach((type) => {
-    const conf = getGlobalBandConfig(type);
-    otherDefaults += conf?.defaultHeight || 0;
-  });
-
-  return Math.max(20, printableH - otherDefaults);
-});
-
-const onDefaultHeightChange = (bandType: string) => {
-  const conf = getGlobalBandConfig(bandType);
-  if (typeof conf.defaultHeight === "number") {
-    if (conf.defaultHeight < 10) {
-      conf.defaultHeight = 10;
-    }
-    if (conf.defaultHeight > conf.max) {
-      conf.max = conf.defaultHeight;
-    }
-    if (conf.defaultHeight < conf.min) {
-      conf.min = conf.defaultHeight;
-    }
-  }
-  autoSaveGlobalBandConfig();
-};
-
-const onGlobalMinChange = (bandType: string) => {
-  const conf = getGlobalBandConfig(bandType);
-  if (typeof conf.min === "number") {
-    if (conf.min < 10) {
-      conf.min = 10;
-    }
-    if (conf.min > conf.max) {
-      conf.max = conf.min;
-    }
-    if (typeof conf.defaultHeight === "number" && conf.defaultHeight < conf.min) {
-      conf.defaultHeight = conf.min;
-    }
-  }
-  autoSaveGlobalBandConfig();
-};
-
-const getMaxAllowedGlobalLimit = (bandType: string): number => {
-  const pageH = localReportProperties.value?.pageHeight || 842;
-  const topM = localReportProperties.value?.topMargin || 20;
-  const bottomM = localReportProperties.value?.bottomMargin || 20;
-  const printableH = pageH - topM - bottomM;
-  let otherBandsMin = 0;
-  standardActiveBands.forEach((type) => {
-    if (type !== bandType) {
-      const conf = getGlobalBandConfig(type);
-      otherBandsMin += Math.max(10, conf?.min || 10);
-    }
-  });
-  const detailMin = 10;
-  return Math.max(10, printableH - otherBandsMin - detailMin);
-};
-
-const onGlobalMaxChange = (bandType: string) => {
-  const conf = getGlobalBandConfig(bandType);
-  const maxCeiling = getMaxAllowedGlobalLimit(bandType);
-  if (typeof conf.max === "number") {
-    if (conf.max < 10) {
-      conf.max = 10;
-    }
-    if (conf.max > maxCeiling) {
-      conf.max = maxCeiling;
-    }
-    if (conf.max < conf.min) {
-      conf.min = conf.max;
-    }
-    if (typeof conf.defaultHeight === "number" && conf.defaultHeight > conf.max) {
-      conf.defaultHeight = conf.max;
-    }
-  }
-  autoSaveGlobalBandConfig();
-};
-
-const autoSaveGlobalBandConfig = () => {
-  try {
-    localStorage.setItem(
-      GLOBAL_BAND_LIMITS_STORAGE_KEY,
-      JSON.stringify(globalDefaultBandConfig.value),
-    );
-  } catch (e) {
-    console.error("Failed to save default band config to localStorage:", e);
-  }
-  userSettings.saveLater();
-};
-
-const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
-  globalDefaultBandConfig.value = JSON.parse(
-    JSON.stringify(DEVELOPER_DEFAULT_BAND_CONFIG),
-  );
-  try {
-    localStorage.removeItem(GLOBAL_BAND_LIMITS_STORAGE_KEY);
-  } catch (e) {
-    console.error("Failed to remove saved band limits from localStorage:", e);
-  }
-  userSettings.saveLater();
-  if (notify !== false) notification.success(t("defaultSettings.originalDone"));
-};
-
-// One undo step; the JRXML is written from the changed report (re-reading the
-// JRXML text, which still held the old heights, put them back)
-const applyGlobalDefaultsToCurrentTemplate = () => {
-  if (!localReportProperties.value) return;
-  report.saveStateToHistory();
-  const config = globalDefaultBandConfig.value;
-  const limits: Record<string, { min: number; max: number }> = {};
-  for (const key of Object.keys(config)) {
-    const item = config[key];
-    if (item) {
-      limits[key] = { min: item.min, max: item.max };
-    }
-  }
-  localReportProperties.value.bandLimits = limits;
-  emit("update:report-properties", localReportProperties.value);
-
-  if (bands.value && Array.isArray(bands.value)) {
-    let otherBandsH = 0;
-    bands.value.forEach((band) => {
-      const bConf = config[band.type];
-      if (band.type !== "detail" && bConf?.defaultHeight) {
-        band.height = bConf.defaultHeight;
-        otherBandsH += band.height;
-      }
-    });
-    // Detail band absorbs whatever space remains on the page
-    const detailBand = bands.value.find((b) => b.type === "detail");
-    if (detailBand) {
-      const pageH = localReportProperties.value?.pageHeight || 842;
-      const topM = localReportProperties.value?.topMargin || 20;
-      const bottomM = localReportProperties.value?.bottomMargin || 20;
-      detailBand.height = Math.max(20, pageH - topM - bottomM - otherBandsH);
-    }
-  }
-  report.updateJrxml();
-
-  notification.success(t("bottomPanel.appliedToTemplateSuccess"));
-};
-
-// Default Settings: what new reports start with, saved in this browser on
-// every change. "Apply to this report" copies one part into the open report
-// (one undo step; paper and margins refit the page).
-const defaults = ref<ReportDefaults>(loadReportDefaults());
-
-// The user's saved settings arrived from the server (their account): show them
-const userSettings = useUserSettingsStore();
-watch(
-  () => userSettings.version,
-  () => {
-    defaults.value = loadReportDefaults();
-    globalDefaultBandConfig.value = getEffectiveDefaultBandConfig();
-  },
-);
-const DEFAULT_CARDS = [
-  { section: "paper", title: "templateSettings.paper" },
-  { section: "margins", title: "bottomPanel.pageMargins" },
-  { section: "font", title: "templateSettings.font" },
-  { section: "bands", title: "bottomPanel.bandSelection" },
-] as const;
-
-function changeDefaults(patch: Partial<PageSetupValue>) {
-  const bandTypes = patch.bandTypes
-    ? DEFAULT_BAND_CHOICES.filter((type) => patch.bandTypes!.includes(type) || type === BAND_TYPE_CONSTANTS.DETAIL)
-    : defaults.value.bandTypes;
-  defaults.value = { ...defaults.value, ...patch, bandTypes };
-  saveReportDefaults(defaults.value);
-}
-
-// One card back to the app's original settings
-function useOriginal(section: (typeof DEFAULT_CARDS)[number]["section"]) {
-  const original = builtInReportDefaults();
-  if (section === "paper") changeDefaults({ pageWidth: original.pageWidth, pageHeight: original.pageHeight });
-  else if (section === "margins") {
-    const { leftMargin, rightMargin, topMargin, bottomMargin } = original;
-    changeDefaults({ leftMargin, rightMargin, topMargin, bottomMargin });
-  } else if (section === "font") changeDefaults({ font: { ...original.font } });
-  else changeDefaults({ bandTypes: original.bandTypes });
-  notification.success(t("defaultSettings.originalDone"));
-}
-
-// Every card and the section heights back to the original settings
-function resetAllToOriginal() {
-  defaults.value = resetReportDefaults();
-  resetBandLimitsToDefault(false);
-  notification.success(t("defaultSettings.resetDone"));
-}
-
-function applyToThisReport(section: (typeof DEFAULT_CARDS)[number]["section"]) {
-  const page = localReportProperties.value;
-  const wanted = defaults.value;
-  if (section === "bands") {
-    report.setBandTypes(wanted.bandTypes);
-  } else {
-    report.saveStateToHistory();
-    if (section === "paper") {
-      page.pageWidth = wanted.pageWidth;
-      page.pageHeight = wanted.pageHeight;
-    } else if (section === "margins") {
-      page.leftMargin = wanted.leftMargin;
-      page.rightMargin = wanted.rightMargin;
-      page.topMargin = wanted.topMargin;
-      page.bottomMargin = wanted.bottomMargin;
-    } else {
-      page.defaultFont = { ...wanted.font };
-    }
-    if (section === "font") report.updateJrxml();
-    else emit("page-setup-change");
-  }
-  notification.success(t("defaultSettings.applied"));
-}
 
 // Computed property: local binding for jrxmlContent
 const localJrxmlContent = computed({
@@ -1247,250 +793,11 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.details-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e6e5ee;
-}
-
-.details-note {
-  flex: 1;
-  font-size: 12px;
-  color: #5b5a6b;
-}
-
-.details-json {
-  flex: 1;
-  margin: 0;
-  padding: 12px;
-  overflow: auto;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #1c1b26;
-}
-
-.page-settings-tab {
-  background-color: #f8f9fb;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 .panel-actions {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
-}
-
-/* Default Settings: what they are for, and putting back the app's own */
-.defaults-intro {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 10px 14px;
-  border: 1px solid rgba(124, 92, 247, 0.22);
-  border-radius: 10px;
-  background: rgba(124, 92, 247, 0.07);
-  color: #45425a;
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-.defaults-intro > :first-child {
-  flex-shrink: 0;
-  color: #6440f4;
-}
-.defaults-intro > span {
-  flex: 1;
-}
-.defaults-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-.defaults-reset,
-.defaults-apply {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-  padding: 4px 10px;
-  border: 1px solid #e6e5ee;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #45425a;
-  font-size: 11.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.defaults-apply {
-  border-color: rgba(124, 92, 247, 0.35);
-  color: #6440f4;
-}
-.defaults-reset:hover,
-.defaults-apply:hover {
-  border-color: rgba(124, 92, 247, 0.55);
-  background: rgba(124, 92, 247, 0.06);
-}
-
-.settings-grid {
-  display: grid;
-  /* Four cards fill the row (auto-fit left an empty fifth column next to them,
-     because the full-width Default Band Settings keeps every track) */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-  padding: 16px 20px 24px;
-}
-
-@media (max-width: 1280px) {
-  .settings-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .settings-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.settings-grid::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.settings-grid::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.settings-grid::-webkit-scrollbar-thumb {
-  background: #cfd5e1;
-  border-radius: 4px;
-}
-
-.settings-grid::-webkit-scrollbar-thumb:hover {
-  background: #b0b8c9;
-}
-
-.settings-section {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 16px 18px;
-  border: 1px solid rgba(28, 27, 38, 0.08);
-  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.settings-section:hover {
-  border-color: rgba(124, 92, 247, 0.22);
-  box-shadow: 0 4px 12px rgba(23, 20, 44, 0.05);
-}
-
-.settings-section h4 {
-  margin-top: 0;
-  margin-bottom: 14px;
-  color: #1c1b26;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
-  padding-bottom: 8px;
-}
-
-/* Form row layout */
-.form-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.form-row:last-child {
-  margin-bottom: 0;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-/* Compact font settings style */
-.font-settings-compact {
-  grid-column: span 1;
-}
-
-.font-settings-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.font-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin: 0 0 10px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: #6b7280;
-}
-
-.font-info svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: #6366f1;
-}
-
-.font-setting-item {
-  flex: 1;
-}
-
-.font-style-options {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.font-style-options label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 0;
-  font-weight: 500;
-  font-size: 12px;
-  color: #45425a;
-  cursor: pointer;
-  user-select: none;
-}
-
-.font-style-options label input[type="checkbox"],
-.band-selection-item label input[type="checkbox"] {
-  accent-color: #6366f1;
-  cursor: pointer;
-}
-
-.checkbox-group {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.checkbox-group label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 0;
-  font-weight: 500;
-  font-size: 12px;
-  color: #45425a;
 }
 
 .jrxml-container {
@@ -1624,295 +931,6 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.band-selection-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-}
-
-.band-selection-item {
-  margin: 0;
-}
-
-.band-selection-item label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 10px;
-  background: #fbfbfe;
-  border: 1px solid rgba(28, 27, 38, 0.08);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #1c1b26;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-
-.band-selection-item label:hover:not(.is-disabled) {
-  background: rgba(99, 102, 241, 0.05);
-  border-color: rgba(99, 102, 241, 0.25);
-  color: #5b3ee0;
-}
-
-.band-selection-item label.is-disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-  background: #f6f6fa;
-  color: #8a84a3;
-}
-
-.band-required-tag {
-  font-size: 10px;
-  font-weight: 650;
-  color: #059669;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  padding: 1px 5px;
-  border-radius: 4px;
-  line-height: 1.2;
-  margin-left: auto;
-}
-
-.band-selection-note {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed rgba(28, 27, 38, 0.08);
-  color: #8a84a3;
-  font-size: 11px;
-}
-
-/* Section Heights: the same card look as Paper, Margins… across the row */
-.band-limits-section {
-  grid-column: 1 / -1;
-  padding: 12px;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
-}
-
-.band-limits-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.band-limits-title-area h5 {
-  margin: 0;
-  color: #1c1b26;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.band-limits-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-}
-
-.band-limits-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
-  gap: 12px;
-}
-
-.band-limit-card {
-  background-color: #fbfbfe;
-  border: 1px solid rgba(28, 27, 38, 0.08);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.band-limit-card:hover {
-  border-color: rgba(99, 102, 241, 0.25);
-  background-color: #ffffff;
-  box-shadow: 0 2px 6px rgba(23, 20, 44, 0.04);
-}
-
-.band-limit-title {
-  font-weight: 650;
-  font-size: 12px;
-  color: #1c1b26;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(28, 27, 38, 0.05);
-  padding-bottom: 6px;
-}
-
-/* The same green pill as Template Settings */
-.band-badge-auto {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  font-size: 10px;
-  font-weight: 650;
-  color: #059669;
-}
-
-.band-limit-inputs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.band-limit-card-detail .band-limit-inputs {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.band-limit-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.band-limit-input-group label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6f6a7e;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-.input-unit-wrapper {
-  display: flex;
-  align-items: center;
-  border: 1px solid rgba(28, 27, 38, 0.1);
-  border-radius: 6px;
-  padding: 4px 6px;
-  background-color: #ffffff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input-unit-wrapper:hover {
-  border-color: #c4b5fd;
-}
-
-.input-unit-wrapper:focus-within {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(124, 92, 247, 0.14);
-}
-
-.input-unit-wrapper.is-disabled {
-  opacity: 0.65;
-  background-color: #f6f6fa;
-  cursor: not-allowed;
-  border-color: rgba(28, 27, 38, 0.06);
-}
-
-.input-unit-wrapper.is-disabled input {
-  cursor: not-allowed;
-  color: #8a84a3;
-}
-
-.input-unit-wrapper input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  outline: none;
-  padding: 0;
-  color: #1c1b26;
-}
-
-.input-unit-wrapper .unit {
-  font-size: 10px;
-  color: #8a84a3;
-  margin-left: 2px;
-  font-weight: 500;
-}
-
-.margin-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.margin-inputs input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
-  background-color: #ffffff;
-  border: 1px solid rgba(28, 27, 38, 0.12);
-  border-radius: 7px;
-  font-size: 12px;
-  color: #1c1b26;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.margin-inputs input:hover {
-  border-color: #c4b5fd;
-}
-
-.margin-inputs input:focus {
-  border-color: #6366f1;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
-}
-
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.form-group label,
-.font-setting-item label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 550;
-  font-size: 11.5px;
-  color: #6f6a7e;
-  letter-spacing: 0.01em;
-}
-
-.form-group input,
-.form-group select,
-.font-setting-item select,
-.font-setting-item input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
-  background-color: #ffffff;
-  border: 1px solid rgba(28, 27, 38, 0.12);
-  border-radius: 7px;
-  font-size: 12px;
-  color: #1c1b26;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-}
-
-.form-group input:hover,
-.form-group select:hover,
-.font-setting-item select:hover,
-.font-setting-item input:hover {
-  border-color: #c4b5fd;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.font-setting-item select:focus,
-.font-setting-item input:focus {
-  border-color: #6366f1;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
 .validation-btn {

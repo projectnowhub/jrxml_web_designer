@@ -48,7 +48,7 @@ jrxml_web_designer/
     ├── locales/              # en.json, ms.json (kept in sync)
     ├── types/                # index.ts (design model), dataSource.ts (table data)
     ├── config/               # apiConfig.ts, fonts.config.ts
-    ├── services/             # plain API calls: apiClient, auth, reportDataService (every Report Data call: projects, tables, rows, chart numbers; helpers in services/helpers/), templateService, reportService (PDF), images
+    ├── services/             # plain API calls: apiClient, auth, reportDataService (every Report Data call: projects, tables, rows, chart numbers; helpers in services/helpers/), reportCatalogService (templates, saving, Preview PDF's report run), images
     ├── queries/              # TanStack Query: queryClient (CDP defaults), keys, projects, dataSources, templates
     ├── mcp/                  # AI assistant: tools, element schemas (elements/), placement rules, API calls
     ├── composables/          # useUndoRedo, useZoom, useTableRows, useDesignerFiles, useLivePreview, alignment/snap/drag…
@@ -142,6 +142,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Boxes, presets, page border | `utils/framePresets.ts`, `utils/reportParts.ts`, `elements/FrameElement.vue` |
 | Custom (typed) tables | `utils/customTable.ts`, `utils/jrxml/customTableXml.ts`, `elements/CustomTableElement.vue`, `properties/CustomTableProperties.vue` |
 | Page Number | `utils/paginationPresets.ts`, `properties/PaginationProperties.vue` |
+| Watermark | `utils/watermark/` (setup, layout and pages; drawing; the printed picture), `designer/WatermarkLayer.vue` (behind each page), `elements/WatermarkElement.vue` (help pictures), `properties/WatermarkProperties.vue` |
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_API_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
 | Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |
@@ -158,7 +159,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 
 ### 5.4 Modals
 
-All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewModal` (PDF preview, read-only table list), `FieldManagementModal`, `VariableManagementModal`, `PreviewServerSettingsModal`, `HelpModal`, and the generic `InputModal` and `ConfirmModal`.
+All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewModal` (PDF preview, read-only table list), `FieldManagementModal`, `VariableManagementModal`, `HelpModal`, and the generic `InputModal` and `ConfirmModal`.
 
 ### 5.5 Interaction
 
@@ -172,11 +173,10 @@ Report data comes from the backend per project: the CDP projects and their detai
 
 ## 7. External Services
 
-### 7.1 PDF preview server
+### 7.1 Preview PDF
 
-- `POST https://preview.report.projectnowcdp.com/api/pdf/generateForm` (configurable in Preview Server Settings)
-- Sends only the JRXML (form field `jrxml`); the report server fetches table rows and chart numbers itself from the setups in it (`docs/REPORT_ENGINE.md`); returns the PDF
-- Code: `services/reportService.ts`, `PdfPreviewModal.vue`. Server source: https://github.com/fengyunhe/jrxml_preview_server
+- The template is saved on the server first (`PUT /v2/reports/{id}/edit`), then its Jmix report is run: `POST /rest/reports/run/{report.id}` `{ parameters }` (the report's id and parameters come with the template; the template's project as its project parameter); returns the PDF
+- Code: `utils/reportRun.ts` (`runTemplatePdf`), `services/reportCatalogService.ts` (`postRunReport`), `PdfPreviewModal.vue`
 
 ### 7.2 CDP backend
 

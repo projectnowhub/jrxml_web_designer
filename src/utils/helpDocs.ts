@@ -21,6 +21,8 @@ import { buildChartElement } from "@/utils/chart/chartElement";
 import { buildCustomTable } from "@/utils/customTable";
 import { buildContentsList, hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { sampleEntries } from "@/utils/pageDesigns";
+import { buildWatermarkElement, isWatermark } from "@/utils/watermark/watermarkElement";
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 
 // Settings cards, by what they set (shared ones are written once)
 export type SettingId =
@@ -78,7 +80,13 @@ export type SettingId =
   | "tocRows"
   | "tocPlace"
   | "tocLook"
-  | "tocColours";
+  | "tocColours"
+  | "watermarkContent"
+  | "watermarkLook"
+  | "watermarkAngle"
+  | "watermarkPlace"
+  | "watermarkPages"
+  | "watermarkPageMenu";
 
 export type DocGroup = "start" | "basic" | "presets" | "composite";
 
@@ -104,6 +112,7 @@ export type DocPageId =
   | "presetSignOff"
   | "presetTables"
   | "pageBorder"
+  | "watermark"
   | "pageNumber"
   | "date"
   | "location";
@@ -313,6 +322,16 @@ export const DOC_PAGES: DocPage[] = [
     sample: (ctx) => [buildFrameTemplate("framePageBorder", { ...ctx, availableHeight: 200 })],
   },
   {
+    id: "watermark",
+    group: "composite",
+    tile: "watermark",
+    settings: ["watermarkPageMenu", "watermarkContent", "watermarkLook", "watermarkAngle", "watermarkPlace", "watermarkPages"],
+    guides: ["watermark"],
+    sample: (ctx) => [
+      buildWatermarkElement({ width: ctx.availableWidth, height: 200 }, { text: "DRAFT", size: 72, opacity: 25 }),
+    ],
+  },
+  {
     id: "pageNumber",
     group: "composite",
     tile: "pageNumber",
@@ -359,6 +378,7 @@ export function docPageFor(element: DesignElement, bandType: string | undefined,
   if (isDateElement(element)) return "date";
   if (isLocationElement(element) || isLocationPart(element)) return "location";
   if (element.type === "frame" && bandType === "background" && !inBox) return "pageBorder";
+  if (isWatermark(element)) return "watermark";
   if (hasProperty(element, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(element, SUB_HEADING_PROPERTY)) return "subHeading";
   switch (element.type) {
@@ -403,7 +423,8 @@ export const keyLabel = (key: string) => (key === "Mod" ? (IS_MAC ? "⌘" : "Ctr
 export const TOOLS: { id: ToolId; keys?: string[][]; parts?: string[] }[] = [
   { id: "projects" },
   { id: "reportName" },
-  { id: "file", keys: [["Alt", "N"], ["Mod", "O"], ["Mod", "S"]] },
+  // The File menu and Download JRXML are shown to developers only
+  ...(SHOW_DEVELOPER_TOOLS ? [{ id: "file" as const, keys: [["Alt", "N"], ["Mod", "O"], ["Mod", "S"]] }] : []),
   { id: "undo", keys: [["Mod", "Z"]] },
   { id: "redo", keys: [["Mod", "Y"]] },
   { id: "addPage" },
@@ -414,6 +435,6 @@ export const TOOLS: { id: ToolId; keys?: string[][]; parts?: string[] }[] = [
   { id: "bottomPanel", keys: [["Mod", "B"]] },
   { id: "snap", parts: ["grid", "alignment", "showGrid"] },
   { id: "help" },
-  { id: "download" },
+  ...(SHOW_DEVELOPER_TOOLS ? [{ id: "download" as const }] : []),
   { id: "preview" },
 ];

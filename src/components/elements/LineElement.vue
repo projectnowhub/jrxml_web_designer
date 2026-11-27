@@ -9,9 +9,6 @@
     :is-out-of-bounds="isOutOfBounds"
     :report-font-family="reportFontFamily"
     :report-font-size="reportFontSize"
-    :report-is-bold="reportIsBold"
-    :report-is-italic="reportIsItalic"
-    :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
     @select="handleSelect"
     @drag-start="handleDragStart"
@@ -77,9 +74,6 @@ const props = defineProps<{
   isOutOfBounds?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   parentFrameIndex?: number;
 }>();
 

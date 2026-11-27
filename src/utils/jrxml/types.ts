@@ -1,5 +1,5 @@
 import type { ReportProject } from "../../types/dataSource";
-import type { HeadingNumbering, SavedContentsStyle } from "../../types";
+import type { FontSettings, HeadingNumbering, SavedContentsStyle } from "../../types";
 
 export interface ReportProperties {
   name: string;
@@ -37,6 +37,11 @@ export interface ReportProperties {
   headingNumbers?: HeadingNumbering;
   // Table of Contents looks the user saved (utils/contentsList.ts)
   contentsStyles?: SavedContentsStyle[];
+  // Template Settings kept as report properties (jrxml/templateSettingsXml.ts):
+  // the font new text starts with (`com.cdp.font`; a parsed one may lack its
+  // name) and each header / footer section's limits (`com.cdp.sectionLimits`)
+  defaultFont?: Partial<FontSettings>;
+  bandLimits?: Record<string, { min: number; max: number }>;
 }
 
 export interface Field {

@@ -24,13 +24,13 @@ import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syn
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
 import { syncLocations, syncProjectPlaces } from "@/utils/location/locationElement";
 import { syncTotals } from "@/utils/customTable";
+import { syncWatermarks } from "@/utils/watermark/watermarkElement";
 import { syncProjectValues } from "@/utils/projectValue";
 import { cachedProjectDetails } from "@/queries/projectQueries";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
 import { useFilesStore } from "./files";
-import { lastProject } from "@/utils/lastProject";
 import {
   ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
@@ -108,12 +108,6 @@ function newBands(): Band[] {
   }));
 }
 
-// A new template's projects: the one last chosen, when there is one
-const startingProjects = () => {
-  const project = lastProject();
-  return project ? [project] : [];
-};
-
 export const useReportStore = defineStore("report", () => {
   // The JRXML written from the model (shown, validated and saved)
   const jrxmlContent = ref("");
@@ -145,6 +139,9 @@ export const useReportStore = defineStore("report", () => {
   const printableHeight = computed(
     () => paperHeight.value - (reportProperties.value?.topMargin || 0) - (reportProperties.value?.bottomMargin || 0),
   );
+  const printableWidth = computed(
+    () => paperWidth.value - (reportProperties.value?.leftMargin || 0) - (reportProperties.value?.rightMargin || 0),
+  );
 
   // Undo/redo snapshots the whole model. Every change records a step BEFORE
   // changing anything (saveStateToHistory); one user action = one step.
@@ -173,6 +170,22 @@ export const useReportStore = defineStore("report", () => {
       reportGroups.value = state.reportGroups;
     },
   });
+
+  // A read-only template (a default template being looked at): nothing may
+  // change it. The designer turns every editing tool off; as a safety net, a
+  // change that still gets through (it records its step first) is put back at
+  // the next JRXML write, and `blockedChanges` goes up so the designer can say why
+  const readOnly = ref(false);
+  const blockedChanges = ref(0);
+  let lockedSnapshot: string | null = null;
+
+  function saveStateToHistory(): void {
+    if (readOnly.value) {
+      if (lockedSnapshot === null) lockedSnapshot = JSON.stringify(history.snapshot());
+      return;
+    }
+    history.saveStateToHistory();
+  }
 
   // Detail takes the page height the other bands leave (Background is drawn
   // under them and doesn't count)
@@ -277,6 +290,12 @@ export const useReportStore = defineStore("report", () => {
     if (writing) return;
     writing = true;
     try {
+      // A change to a read-only template: put back
+      if (readOnly.value && lockedSnapshot !== null) {
+        history.restore(JSON.parse(lockedSnapshot) as ReportSnapshot);
+        lockedSnapshot = null;
+        blockedChanges.value++;
+      }
       if (!reportProperties.value || !bands.value || !reportFields.value || !reportParameters.value) return;
       fitBandsToPage();
       // Headings renumbered, contents lists that follow them rebuilt (part of
@@ -291,6 +310,8 @@ export const useReportStore = defineStore("report", () => {
         fontFamily: reportProperties.value.defaultFont?.name,
         fontSize: reportProperties.value.defaultFont?.size,
       });
+      // The watermark covers the printable area of every page
+      syncWatermarks(bands.value, { width: printableWidth.value, height: printableHeight.value });
       // Typed tables: the sums in their total row follow the numbers above
       for (const band of bands.value) {
         for (const element of band.elements) if (element.type === "customTable") syncTotals(element.table);
@@ -349,6 +370,10 @@ export const useReportStore = defineStore("report", () => {
     const toRemove = [...present].filter((type) => !wanted.has(type));
     const toAdd = [...wanted].filter((type) => !present.has(type));
     if (!toRemove.length && !toAdd.length) return;
+    if (readOnly.value) {
+      blockedChanges.value++;
+      return;
+    }
     if (options.record !== false) history.saveStateToHistory();
     const config = getEffectiveDefaultBandConfig();
     const order = (type: string) => ALL_CONFIGURABLE_BANDS.findIndex((b) => b.type === type);
@@ -371,14 +396,18 @@ export const useReportStore = defineStore("report", () => {
   // are repaired, and nothing is selected. The history starts empty, unless
   // keepHistory (applying edited JRXML is one undo step, recorded before).
   function loadReport(data: ReportData, options: { keepHistory?: boolean } = {}) {
+    lockedSnapshot = null;
     const props = data.reportProperties ?? {};
     reportProperties.value = {
       ...newReportProperties(),
       ...props,
-      bandLimits: props.bandLimits || getEffectiveDefaultBandLimits(),
+      // Every header / footer section has its limits: the template's own,
+      // else the Default Settings'
+      bandLimits: { ...getEffectiveDefaultBandLimits(), ...(props.bandLimits ?? {}) },
       // Each report has its own projects; a new template starts with the one
       // last chosen in this browser
-      projects: props.projects ?? (data.reportProperties ? [] : startingProjects()),
+      // A template's project is only what its JRXML names; a new one has none
+      projects: props.projects ?? [],
       // A new template numbers its Headings "1."; an opened one keeps its own
       // (none = "SECTION 1.", what templates used before)
       headingNumbers: data.reportProperties ? props.headingNumbers : { ...NEW_REPORT_HEADING_NUMBERING },
@@ -413,7 +442,11 @@ export const useReportStore = defineStore("report", () => {
   // follows it, so the two can never differ (not even after an undo)
   function propertiesForJrxml(): ReportProperties & { pageCount: number } {
     const name = useFilesStore().currentFileName.trim();
-    return { ...reportProperties.value, name: name || reportProperties.value.name, pageCount: totalPages.value };
+    return {
+      ...reportProperties.value,
+      name: name || reportProperties.value.name,
+      pageCount: totalPages.value,
+    };
   }
 
   return {
@@ -431,11 +464,14 @@ export const useReportStore = defineStore("report", () => {
     paperWidth,
     paperHeight,
     printableHeight,
+    printableWidth,
     special,
     totalPages,
     historyStack: history.historyStack,
     redoStack: history.redoStack,
-    saveStateToHistory: history.saveStateToHistory,
+    saveStateToHistory,
+    readOnly,
+    blockedChanges,
     undo: history.undo,
     redo: history.redo,
     jrxmlVersion,

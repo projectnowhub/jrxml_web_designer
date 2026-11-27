@@ -54,11 +54,10 @@ import { toTableCellValue } from "./helpers/tableRowMappers";
 async function getJmixListPage<TRow>(
   entityName: Entity | (string & {}),
   params: JmixListParams,
-  signal?: AbortSignal,
 ): Promise<JmixListResponse<TRow>> {
   const { data, headers } = await apiClient.requestWithHeaders<ApiResponse<TRow[]>>(
     `${API_ROUTES.table}/${encodeURIComponent(entityName)}?${buildJmixListQuery(params)}`,
-    { method: "GET", signal },
+    { method: "GET" },
   );
   return readJmixListResponse<TRow>(entityName, data, headers, params);
 }
@@ -70,7 +69,6 @@ async function getJmixListPage<TRow>(
 // One page of the projects, A to Z by name
 export async function getProjectsPage(
   { offset = 0 }: { offset?: number } = {},
-  signal?: AbortSignal,
 ): Promise<JmixListResponse<ProjectRecord>> {
   const params: JmixListParams = {
     limit: JMIX_PAGE_SIZE,
@@ -81,7 +79,7 @@ export async function getProjectsPage(
   };
   const { data, headers } = await apiClient.requestWithHeaders<ApiResponse<ProjectRecord[]>>(
     `${API_ROUTES.projectList}?${buildJmixListQuery(params)}`,
-    { method: "GET", signal },
+    { method: "GET" },
   );
   const page = readJmixListResponse<ProjectRecord>(Entity.PROJECT, data, headers, params);
   return { ...page, rows: page.rows.filter((p) => p && projectKey(p)) };
@@ -89,8 +87,8 @@ export async function getProjectsPage(
 
 // ---- 2. Tables (CDP entities and their fields) --------------------------------
 
-export async function getEntities(signal?: AbortSignal): Promise<EntityMetadata[]> {
-  const entities = unwrap(await apiClient.get<ApiResponse<EntityMetadata[]>>(API_ROUTES.entities, { signal }));
+export async function getEntities(): Promise<EntityMetadata[]> {
+  const entities = unwrap(await apiClient.get<ApiResponse<EntityMetadata[]>>(API_ROUTES.entities));
   if (!Array.isArray(entities)) throw new Error("The entity list is not a list");
   return entities.filter((e) => e?.entityName);
 }
@@ -103,7 +101,6 @@ export async function getTableRows(
   projectId: string,
   sourceId: string,
   query: DataQuery,
-  signal?: AbortSignal,
 ): Promise<DataQueryResult> {
   const page = await getJmixListPage<JmixRecord>(
     sourceId,
@@ -120,7 +117,6 @@ export async function getTableRows(
       fetchPlan: LIST_FETCH_PLANS[sourceId],
       dynamicAttributes: true,
     },
-    signal,
   );
   const rows: DataRow[] = page.rows.map((record) =>
     Object.fromEntries(query.columns.map((key) => [key, toTableCellValue(record[key])])),
@@ -131,8 +127,8 @@ export async function getTableRows(
 // ---- 4. Chart numbers ---------------------------------------------------------
 
 // A chart's numbers for one series
-export async function postChartAggregate(request: AggregateRequest, signal?: AbortSignal): Promise<AggregateResult> {
-  const body = await apiClient.post<ApiResponse<AggregateResult>>(API_ROUTES.analytics, JSON.stringify(request), { signal });
+export async function postChartAggregate(request: AggregateRequest): Promise<AggregateResult> {
+  const body = await apiClient.post<ApiResponse<AggregateResult>>(API_ROUTES.analytics, JSON.stringify(request));
   return unwrap(body);
 }
 

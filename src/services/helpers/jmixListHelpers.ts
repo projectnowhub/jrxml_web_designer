@@ -3,8 +3,8 @@
 // (packages/core/api/src/jmix/createJmixCrudService.ts). No API calls here.
 //
 //   GET /v2/table/{entityName}?limit&offset&fetchPlan&returnCount=true&dynamicAttributes&filter&sort
-// `filter` is a Jmix filter as JSON; `sort` is "name" or "-name" (descending),
-// comma-separated. The rows come back as a list (bare or wrapped as
+// `filter` is a Jmix filter as JSON; `sort` is "name,id" or "-name,id"
+// (descending), the id always last. The rows come back as a list (bare or wrapped as
 // { data, message, status }), the total of all matching rows in the
 // x-total-count header.
 
@@ -13,8 +13,12 @@ import { JMIX_PAGE_SIZE } from "@/constants/reportDataConstants";
 import type { ApiResponse } from "@/types/api";
 import type { JmixListParams, JmixListResponse, JmixSort } from "@/types/jmix";
 
-const toJmixSortParam = (sort: JmixSort[]): string =>
-  sort.map((s) => `${s.desc ? "-" : ""}${s.id.replace("+", "")}`).join(",");
+// "name,id", "-createdDate,id": as the CDP app sends it (createCrudService.ts
+// and its lists on dev), the id last so rows with the same value keep one order
+const toJmixSortParam = (sort: JmixSort[]): string => {
+  const fields = sort.map((s) => `${s.desc ? "-" : ""}${s.id.replace("+", "")}`);
+  return sort.some((s) => s.id === "id") ? fields.join(",") : [...fields, "id"].join(",");
+};
 
 // The query string of a list request. /v2/table names the fetch plan
 export function buildJmixListQuery(params: JmixListParams, fetchPlanParam = "fetchPlan"): URLSearchParams {

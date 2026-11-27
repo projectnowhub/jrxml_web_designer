@@ -1,7 +1,9 @@
 <template>
-  <!-- Templates as a table (My Templates' list view): a row click opens the
-       template; the Name / Last edited / Created headings sort; Actions =
-       Open, Rename, Duplicate, Delete as icon buttons (TemplateMenu runs them) -->
+  <!-- The report server's templates as a table (Templates page, List): a row
+       click opens the template; the Name / Last edited / Created headings
+       sort; Actions = icon buttons run by TemplateMenu. kind "default": a
+       "Default" badge by the name, Open and Duplicate; "server" (the tenant's
+       own): Open, Duplicate and Delete -->
   <div class="template-table-wrap">
     <table class="template-table">
       <thead>
@@ -23,34 +25,40 @@
       </thead>
       <tbody>
         <tr
-          v-for="(template, index) in templates"
+          v-for="template in templates"
           :key="template.id"
           class="template-row"
           tabindex="0"
-          @click="openTemplate(template)"
-          @keydown.enter.self="openTemplate(template)"
+          @click="open(template)"
+          @keydown.enter.self="open(template)"
         >
           <td class="col-name">
             <span class="name-cell">
-              <span class="file-icon"><FileText :size="16" :stroke-width="2.25" aria-hidden="true" /></span>
+              <span class="file-icon">
+                <component :is="LayoutTemplate" :size="16" :stroke-width="2.25" aria-hidden="true" />
+              </span>
               <strong>{{ template.name }}</strong>
+              <span v-if="isDefault" class="default-badge">
+                <Lock :size="11" :stroke-width="2.5" aria-hidden="true" />
+                {{ t("reportCatalog.defaultTemplates.badge") }}
+              </span>
             </span>
           </td>
           <td class="col-lastModified">{{ dateText(template.lastModified) }}</td>
           <td class="col-createdAt">{{ dateText(template.createdAt) }}</td>
           <td class="col-owner">
-            <span class="owner-cell"><i>{{ owner.charAt(0) }}</i>{{ owner }}</span>
+            <span class="owner-cell"><i>{{ ownerOf(template).charAt(0) }}</i>{{ ownerOf(template) }}</span>
           </td>
           <td class="col-actions">
-            <div class="row-actions" :data-help="index === 0 ? 'template-actions' : undefined">
+            <div class="row-actions">
               <button
-                v-for="action in ACTIONS"
+                v-for="action in kind === 'server' ? SERVER_ACTIONS : DEFAULT_ACTIONS"
                 :key="action.key"
                 type="button"
                 class="action-button"
                 :class="'is-' + action.key"
-                :title="t(`home.menu.${action.key}`)"
-                :aria-label="`${t(`home.menu.${action.key}`)}: ${template.name}`"
+                :title="actionLabel(action.key)"
+                :aria-label="`${actionLabel(action.key)}: ${template.name}`"
                 @click.stop="menuRef?.run(action.key, template)"
                 @keydown.enter.stop
               >
@@ -68,40 +76,48 @@
         </tr>
       </tbody>
     </table>
-    <TemplateMenu ref="menuRef" />
+    <TemplateMenu ref="menuRef" :kind="kind" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowDown, ArrowUp, ArrowUpDown, Copy, ExternalLink, FileText, Pencil, Trash2 } from "@lucide/vue";
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, ExternalLink, LayoutTemplate, Lock, Trash2 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/types/template";
+import type { TemplateCard, TemplateSortDirection, TemplateSort } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
 
 const props = withDefaults(
   defineProps<{
-    templates: TemplateSummary[];
+    templates: TemplateCard[];
+    // Shown when a template names no owner of its own
     owner: string;
     sort: TemplateSort;
     dir: TemplateSortDirection;
     skeletons?: number;
+    kind?: "default" | "server";
   }>(),
-  { skeletons: 0 },
+  { skeletons: 0, kind: "server" },
 );
 const emit = defineEmits<{ (e: "sort", column: TemplateSort): void }>();
 
 const { t } = useI18n();
-const { dateText, openTemplate } = useTemplates();
+const { dateText, openDefaultTemplate } = useTemplates();
+
+const isDefault = computed(() => props.kind === "default");
+const ownerOf = (template: TemplateCard) => template.owner || props.owner;
+const actionLabel = (key: string) => t(`home.menu.${key}`);
+const open = (template: TemplateCard) => openDefaultTemplate(template);
 
 const COLUMNS: TemplateSort[] = ["name", "lastModified", "createdAt"];
-const ACTIONS = [
+// Default templates: Open and Duplicate; the tenant's own server templates
+// also Delete (all run by TemplateMenu)
+const DEFAULT_ACTIONS = [
   { key: "open", icon: ExternalLink },
-  { key: "rename", icon: Pencil },
   { key: "duplicate", icon: Copy },
-  { key: "delete", icon: Trash2 },
 ] as const;
+const SERVER_ACTIONS = [...DEFAULT_ACTIONS, { key: "delete", icon: Trash2 }] as const;
 const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
 
 const ariaSort = (column: TemplateSort) =>
@@ -149,7 +165,7 @@ tbody tr:last-child td {
 }
 .col-actions {
   width: 1%;
-  text-align: right;
+  text-align: center;
 }
 .sort-head {
   display: inline-flex;
@@ -201,6 +217,19 @@ tbody tr:last-child td {
   border-radius: 8px;
   background: rgba(124, 92, 247, 0.1);
   color: #6440f4;
+}
+.default-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f4f3f8;
+  color: #6e6a80;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .owner-cell {
   display: inline-flex;

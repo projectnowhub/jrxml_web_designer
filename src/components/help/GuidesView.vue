@@ -85,7 +85,8 @@
           </li>
         </ol>
 
-        <button type="button" class="guide-ai" @click="askAI">
+        <!-- The AI Assistant is hidden on staging and production for now -->
+        <button v-if="SHOW_AI_ASSISTANT" type="button" class="guide-ai" @click="askAI">
           <Sparkles :size="15" :stroke-width="2.25" aria-hidden="true" />
           {{ t("help.guides.askAi") }}
         </button>
@@ -98,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { SHOW_AI_ASSISTANT } from "@/config/appEnvironment";
 import { computed, onBeforeUnmount, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -157,6 +159,7 @@ const GUIDE_TILES: Partial<Record<GuideId, string>> = {
   chart: "chart",
   barcode: "barcode",
   pageBorder: "framePageBorder",
+  watermark: "watermark",
   pageNumbers: "pageNumber",
   date: "dateTime",
   presetBoxes: "frameKpiCard",

@@ -159,6 +159,8 @@ const send = async (
     body,
     ...requestInit
   } = options;
+  // Never cancelled: even a caller that slips a signal through doesn't abort it
+  delete (requestInit as RequestInit).signal;
 
   const requestHeaders = new Headers(headers);
 

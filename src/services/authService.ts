@@ -12,8 +12,7 @@ import type { ApiErrorBody, ApiResponse } from "@/types/api";
 import type { AccessTokenClaims, AuthUser, LoginErrorQuery, LoginOptions, TokenResponse } from "@/types/auth";
 import { isDesktopApp } from "@/utils/desktopApp";
 import { queryClient } from "../queries/queryClient";
-import { forgetLastProject } from "../utils/lastProject";
-import { useUserSettingsStore } from "../stores/userSettings";
+import { USER_SETTINGS_STORAGE_KEYS } from "@/constants/constants";
 
 export const login = async (options: LoginOptions = {}): Promise<void> => {
   const clientId = getClientId(AUTH_CONFIG.clientId);
@@ -133,8 +132,8 @@ export const logout = async (redirectTo = "/login"): Promise<void> => {
   localStorage.removeItem(AUTH_TOKEN_KEY);
   // The next person to sign in never sees this one's projects or data
   queryClient.clear();
-  forgetLastProject();
-  useUserSettingsStore().forgetSettings();
+  // The user's Default Settings are on the server: the next person gets theirs
+  USER_SETTINGS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 
   const isTauri = isDesktopApp();
 

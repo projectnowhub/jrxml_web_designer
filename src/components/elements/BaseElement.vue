@@ -118,9 +118,6 @@ const props = defineProps<{
   isDragging?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   isOutOfBounds?: boolean;
   // Extra room (design px) between the element and its selection frame on the
   // top / left, for things drawn just outside it (an open typed table's
@@ -283,9 +280,9 @@ const elementStyle = computed(() => {
     borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : (props.element.type === 'image' || props.element.type === 'textField') ? propertyCornerRadiusCss(props.element) : undefined),
     fontFamily: resolveReportFont(props.element.fontFamily || props.reportFontFamily),
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
-    fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
-    fontStyle: (props.element.isItalic === true || (props.element.isItalic === undefined && props.reportIsItalic)) ? 'italic' : 'normal',
-    textDecoration: (props.element.isUnderline === true || (props.element.isUnderline === undefined && props.reportIsUnderline)) ? 'underline' : 'none',
+    fontWeight: props.element.isBold === true ? 'bold' : 'normal',
+    fontStyle: props.element.isItalic === true ? 'italic' : 'normal',
+    textDecoration: props.element.isUnderline === true ? 'underline' : 'none',
     display: 'flex' as 'flex',
     alignItems: verticalAlign as any,
     justifyContent: justifyContent as any,

@@ -152,6 +152,25 @@
           </div>
           <div class="tile-menu-hint">{{ t("customTable.dragHint") }}</div>
         </template>
+        <template v-else-if="tileMenu.type === 'image'">
+          <div class="tile-menu-title">{{ t("pictureChooser.tile.chooseKind") }}</div>
+          <div class="table-kind-options">
+            <button
+              v-for="kind in IMAGE_KINDS"
+              :key="kind.value"
+              type="button"
+              class="table-kind-option"
+              @click="chooseImageKind(kind.value)"
+            >
+              <component :is="kind.icon" :size="18" :stroke-width="1.75" aria-hidden="true" />
+              <span class="table-kind-text">
+                <span class="table-kind-name">{{ t(kind.labelKey) }}</span>
+                <span class="table-kind-desc">{{ t(kind.descKey) }}</span>
+              </span>
+            </button>
+          </div>
+          <div class="tile-menu-hint">{{ t("pictureChooser.tile.dragHint") }}</div>
+        </template>
         <template v-else-if="tileMenu.type === 'barcode'">
           <div class="tile-menu-title">{{ t("barcode.chooseType") }}</div>
           <div v-for="group in BARCODE_GROUPS" :key="group" class="chart-menu-group">
@@ -210,13 +229,16 @@ import { NButton } from "naive-ui";
 import {
   ChevronDown,
   Database,
+  Images,
   MousePointerClick,
   PencilLine,
+  Upload,
 } from "@lucide/vue";
 import ReportDataPanel from "./designer/ReportDataPanel.vue";
 import ElementPreview from "./common/ElementPreview.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { buildFrameTemplate, findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
+import { findWatermark, WATERMARK_TYPE } from "../utils/watermark/watermarkElement";
 import { buildReportPart, isReportPartType } from "../utils/reportParts";
 import { isContentsDesignType, isCoverDesignType } from "../utils/pageDesigns";
 import {
@@ -258,6 +280,8 @@ interface Emits {
   (e: "add-chart-from-source", source: ReportSourceRef): void;
   (e: "insert-barcode", barcodeType: BarcodeType): void;
   (e: "insert-table", kind: "typed" | "data"): void;
+  // The Image tile: a picture from the project's photos or the computer
+  (e: "insert-image", from: "photos" | "computer"): void;
 }
 
 // Use default values
@@ -359,15 +383,18 @@ function getFieldTypeName(className: string): string {
 }
 
 // Handle drag start
-// Only one page border per report; the tile stays clickable so the designer can
-// explain why and select the existing border
+// Only one page border and one watermark per template: the tile is turned off
+// once there is one, but stays clickable so the designer can explain why and
+// select the existing one
 const hasPageBorder = computed(() => findPageBorder(bands.value) !== null);
-const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBorder.value;
+const hasWatermark = computed(() => findWatermark(bands.value) !== null);
+const isUnavailable = (type: string) =>
+  (type === PAGE_BORDER_TYPE && hasPageBorder.value) || (type === WATERMARK_TYPE && hasWatermark.value);
 
 // Hover text: why a tile is disabled, or what the tile adds (its own line in
 // elementLibrary.tileHints, else the preset's description)
 const tileHint = (type: string): string | undefined => {
-  if (isUnavailable(type)) return t("framePresets.pageBorderExists");
+  if (isUnavailable(type)) return t(type === WATERMARK_TYPE ? "watermark.tileExists" : "framePresets.pageBorderExists");
   if (te(`elementLibrary.tileHints.${type}`)) return t(`elementLibrary.tileHints.${type}`);
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
   if (isCoverDesignType(type) || isContentsDesignType(type)) return t(`pageDesigns.designs.${type}.tileHint`);
@@ -435,16 +462,23 @@ function handleDragStart(event: DragEvent, element: any): void {
   emit("drag-start", event, element);
 }
 
-// The Page Number, Chart, Barcode and Table tiles ask a question first (where /
-// which type / typed or project data) when clicked; dragging them drops a default one
-type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart" | "barcode" | "table";
+// The Page Number, Chart, Barcode, Table and Image tiles ask a question first
+// (where / which type / typed or project data / which picture) when clicked;
+// dragging them drops a default one
+type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart" | "barcode" | "table" | "image";
 const hasTileMenu = (type: string): type is TileMenuType =>
-  type === PAGE_NUMBER_TYPE || type === "chart" || type === "barcode" || type === "table";
+  type === PAGE_NUMBER_TYPE || type === "chart" || type === "barcode" || type === "table" || type === "image";
 
 // Table tile: the same two choices as "Table content" in the table's properties
 const TABLE_KINDS = [
   { value: "typed", labelKey: "customTable.typed", descKey: "customTable.typedDesc", icon: PencilLine },
   { value: "data", labelKey: "customTable.fromData", descKey: "customTable.fromDataDesc", icon: Database },
+] as const;
+
+// Image tile: where the picture comes from (the picture chooser's two tabs)
+const IMAGE_KINDS = [
+  { value: "photos", labelKey: "pictureChooser.tile.photos", descKey: "pictureChooser.tile.photosDesc", icon: Images },
+  { value: "computer", labelKey: "pictureChooser.tile.computer", descKey: "pictureChooser.tile.computerDesc", icon: Upload },
 ] as const;
 
 // One click adds the tile's item (tiles with a question open it instead). A
@@ -471,6 +505,7 @@ const tileMenuLabel = computed(() => {
   if (tileMenu.value?.type === "chart") return t("chart.chooseType");
   if (tileMenu.value?.type === "barcode") return t("barcode.chooseType");
   if (tileMenu.value?.type === "table") return t("customTable.chooseKind");
+  if (tileMenu.value?.type === "image") return t("pictureChooser.tile.chooseKind");
   return t("pagination.choosePosition");
 });
 const tileMenuRef = ref<HTMLElement | null>(null);
@@ -542,6 +577,11 @@ function chooseChartType(chartType: ChartType): void {
 function chooseTableKind(kind: "typed" | "data"): void {
   closeTileMenu();
   emit("insert-table", kind);
+}
+
+function chooseImageKind(from: "photos" | "computer"): void {
+  closeTileMenu();
+  emit("insert-image", from);
 }
 
 function chooseBarcodeType(barcodeType: BarcodeType): void {

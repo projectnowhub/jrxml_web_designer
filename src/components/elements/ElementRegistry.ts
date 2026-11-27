@@ -27,6 +27,7 @@ import {
   Square,
   SquareDashed,
   SquareSquare,
+  Stamp,
   StickyNote,
   Table as TableIcon,
   TableProperties,
@@ -376,6 +377,17 @@ export class ElementRegistry {
       iconComponent: SquareSquare,
       category: "composite",
       defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+    });
+
+    // Watermark: faint text or a faded picture behind every page, an image in
+    // the Background band built by buildWatermarkElement() in utils/watermark/
+    this.registerElement({
+      type: "watermark",
+      name: "elementNames.watermark",
+      icon: "W",
+      iconComponent: Stamp,
+      category: "composite",
+      defaultProps: { type: "image", x: 0, y: 0, width: 200, height: 100 },
     });
 
     // Page number: a text field built by buildPaginationElement() in

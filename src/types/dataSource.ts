@@ -399,6 +399,8 @@ export interface ChartDimension {
 export interface ChartSeriesBinding {
   measure: ChartMeasure;
   splitBy?: ChartDimension;
+  // Horizontal bars only: drawn as a line over the bars (the CDP app's "Show as")
+  renderAs?: "line";
 }
 
 // What a chart shows and how it looks. Saved as JSON in the chart's
@@ -434,7 +436,9 @@ export interface ChartBinding {
   series?: ChartSeriesBinding[];
   // Bars and areas on top of each other instead of side by side
   stacked?: boolean;
-  // Gauge: the end of the scale; empty = a round number above the value
+  // Gauge: the ends of the scale (the CDP app's Gauge range); none = Auto
+  // (0 to a round number above the value, as the CDP app's computeAutoGaugeRange)
+  gaugeMin?: number;
   gaugeMax?: number;
   filters?: TableFilter[];
 }
