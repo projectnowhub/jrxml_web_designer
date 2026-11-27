@@ -5,15 +5,18 @@
     <span class="eyebrow">{{ t("defaultSettings.page.eyebrow") }}</span>
     <h1>{{ t("defaultSettings.page.title") }}</h1>
     <p>{{ t("defaultSettings.page.subtitle") }}</p>
-    <DefaultSettingsEditor class="editor" />
+    <!-- Drawn again when the settings saved with the account arrive -->
+    <DefaultSettingsEditor :key="userSettings.fromServer" class="editor" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import DefaultSettingsEditor from "@/components/settings/DefaultSettingsEditor.vue";
+import { useUserSettingsStore } from "@/stores/userSettings";
 
 const { t } = useI18n();
+const userSettings = useUserSettingsStore();
 </script>
 
 <style scoped>

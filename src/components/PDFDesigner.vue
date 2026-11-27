@@ -29,7 +29,7 @@
             undoRedo: headerTier >= 5,
             edit: headerTier >= 4,
             view: true,
-            download: headerTier >= 4,
+            download: SHOW_DEVELOPER_TOOLS && headerTier >= 4,
           }"
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
@@ -70,14 +70,29 @@
           </div>
           <!-- Narrow screens: the icon only (the words are in its tooltip) -->
           <div class="auto-save-badge" :title="saveStatusTitle">
+            <!-- Hidden copies of every state: the badge keeps the room of the
+                 widest one, so "Saving…" / "Save failed" never push the header
+                 tools around or slide under the project picker -->
+            <template v-if="headerTier < 6">
+              <span v-for="label in saveStatusLabels" :key="label" class="save-status-text save-sizer" aria-hidden="true">
+                <span class="save-sizer-icon"></span>
+                <span v-if="headerTier < 4">{{ label }}</span>
+              </span>
+            </template>
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
               <span class="save-spinner"></span>
               <span v-if="headerTier < 4">{{ t("editorHeader.saving") }}</span>
             </span>
-            <span v-else-if="saveStatus === 'error'" class="save-status-text error">
-              <CircleAlert v-if="headerTier >= 4" class="saved-icon" :size="13" :stroke-width="2.5" />
-              <span v-else>{{ t("editorHeader.saveFailed") }}</span>
-            </span>
+            <!-- A failed save: a click tries again -->
+            <button
+              v-else-if="saveStatus === 'error'"
+              type="button"
+              class="save-status-text error save-retry"
+              @click="saveNow"
+            >
+              <CircleAlert class="saved-icon" :size="13" :stroke-width="2.5" />
+              <span v-if="headerTier < 4">{{ t("editorHeader.saveFailed") }}</span>
+            </button>
             <span v-else-if="headerTier < 6" class="save-status-text saved">
               <Check class="saved-icon" :size="13" :stroke-width="2.5" />
               <span v-if="headerTier < 4">{{ t("editorHeader.saved") }}</span>
@@ -94,10 +109,11 @@
           @update-projects="setReportProjects"
         />
 
-        <span v-if="headerTier < 3" class="toolbar-divider"></span>
+        <span v-if="SHOW_DEVELOPER_TOOLS && headerTier < 3" class="toolbar-divider"></span>
 
-        <!-- 4. File Manager -->
+        <!-- 4. File Manager (developers only: New / Open, a .jrxml from the computer) -->
         <FileManager
+          v-if="SHOW_DEVELOPER_TOOLS"
           ref="fileManagerRef"
           data-hint="file"
           :compact="headerTier >= 3"
@@ -201,9 +217,9 @@
         <!-- 10. Help: the tour, the Quick guide, shortcuts, the AI assistant -->
         <HelpMenu context="designer" :show-label="headerTier < 2" />
 
-        <!-- 11. Download JRXML / Preview PDF -->
+        <!-- 11. Download JRXML (developers only) / Preview PDF -->
         <button
-          v-if="headerTier < 4"
+          v-if="SHOW_DEVELOPER_TOOLS && headerTier < 4"
           type="button"
           class="header-btn header-btn-secondary"
           data-hint="download"
@@ -890,13 +906,15 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { readActiveTemplate, saveActiveTemplate } from "@/utils/activeTemplate";
+import { clearActiveTemplate, readActiveTemplate, saveActiveTemplate } from "@/utils/activeTemplate";
+import { useServerTemplateSave } from "@/composables/useServerTemplateSave";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { useEditorStore } from "@/stores/editor";
 import { useFilesStore } from "@/stores/files";
 import { useHelpStore } from "@/stores/help";
+import { useUserSettingsStore } from "@/stores/userSettings";
 import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
 import { cleanLegacyAutoDateElement } from "@/utils/autoDate";
 import { headingNumberText, headingNumbering, listChain, sectionHeadings, syncFollowingLists } from "@/utils/headingSync";
@@ -928,6 +946,7 @@ import {
   REPORT_CONSTANTS,
   UI_CONSTANTS,
   TEMPLATE_NAME_MAX_LENGTH,
+  getEffectiveDefaultBandConfig,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
@@ -1044,7 +1063,8 @@ import {
 import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
 import { isProjectValue } from "../utils/projectValue";
 import { canvasShowsHtml, formatCanvasText } from "../utils/canvasText";
-import { ensureTemplateProject } from "../utils/reportRun";
+import { ensureTemplateProject, runTemplatePdf } from "../utils/reportRun";
+import type { TemplatePdfRun } from "@/types/reportCatalog";
 import {
   buildLocationElement,
   getLocationSetup,
@@ -1113,6 +1133,10 @@ const mcpContext = computed<MCPContext>(() => ({
   undo: () => undo(),
   redo: () => redo(),
   onPageSetupChange: () => handlePageSetupChange(),
+  // check_pdf: the same as Preview PDF (saved, then run on the report server)
+  buildPdf: async () => {
+    return runTemplatePdf(await prepareReportForPreview());
+  },
   pageTool: (request) => runPageTool(request),
 }));
 
@@ -1223,7 +1247,34 @@ const creatingTemplate = ref(false);
 // template, so opening them as an empty layout needs no warning
 const newServerTemplateIds = new Set<string>();
 const { createServerTemplate } = useServerTemplateCreate();
+// The user's Default Settings (a new template takes them, read again first)
+const userSettings = useUserSettingsStore();
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+// The open template saved to the report server (PUT /v2/reports/{id}/edit)
+// once the changes pause, and at once when it is left; the browser keeps its
+// changes meanwhile (saveCurrentFileToStorage) and forgets them once saved
+const serverSave = useServerTemplateSave({
+  snapshot: () => {
+    if (isLoadingFile.value) return null;
+    const id = currentFileId.value;
+    if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) return null;
+    return { id, name: currentFileName.value.trim() || openedTemplateName, jrxml: reportStore.jrxmlContent };
+  },
+  onSaved: (saved) => {
+    const kept = readActiveTemplate();
+    if (kept?.id === saved.id && kept.jrxml === saved.jrxml && kept.name === saved.name) clearActiveTemplate();
+    // The server's name is now this one, and it has changes: an undo back to
+    // how the template opened is saved too
+    if (saved.id === currentFileId.value) {
+      openedTemplateName = saved.name;
+      savedTemplateId = saved.id;
+    }
+  },
+});
+
+// Every label the save badge can show (it keeps the widest one's room)
+const saveStatusLabels = computed(() => [t("editorHeader.saving"), t("editorHeader.saved"), t("editorHeader.saveFailed")]);
 
 const saveStatusTitle = computed(() => {
   if (saveStatus.value === "saving") return t("editorHeader.savingTitle");
@@ -1231,14 +1282,35 @@ const saveStatusTitle = computed(() => {
   return t("editorHeader.savedTitle");
 });
 
+// Leaving the template (another one, a new one, the page closing or hidden):
+// its changes are kept in this browser and sent to the server at once
 function flushAutoSave(): boolean {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = null;
   }
-  return saveCurrentFileToStorage(false);
+  const kept = saveCurrentFileToStorage(false);
+  void serverSave.flush();
+  return kept;
 }
 
+// The page closing: saved at once, and the browser asks first while the
+// server doesn't have the changes yet (they stay kept in this browser anyway)
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  flushAutoSave();
+  if (serverSave.hasUnsaved()) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+}
+
+// The tab hidden (switched away, minimised, closed on a phone): saved at once
+function handleVisibilityChange() {
+  if (document.visibilityState === "hidden") flushAutoSave();
+}
+
+// A change: kept in this browser shortly after, saved on the server once the
+// changes pause (`immediate`: both at once, e.g. a rename)
 function scheduleAutoSave(immediate = false) {
   if (isLoadingFile.value) return;
 
@@ -1247,16 +1319,24 @@ function scheduleAutoSave(immediate = false) {
     autoSaveTimer = null;
   }
 
-  saveStatus.value = "saving";
-
   if (immediate) {
     saveCurrentFileToStorage(false);
+    void serverSave.flush();
   } else {
     autoSaveTimer = setTimeout(() => {
       saveCurrentFileToStorage(false);
       autoSaveTimer = null;
     }, 400);
+    serverSave.schedule();
   }
+}
+
+// Ctrl+S and the save badge after a failure: saved on the server now
+async function saveNow(): Promise<void> {
+  if (readOnlyTemplate.value) return;
+  saveCurrentFileToStorage(false);
+  const ok = await serverSave.flush(true);
+  if (ok) notification.success(t("notifications.fileSavedSuccess"));
 }
 
 function onTitleEnter(e: Event) {
@@ -1319,39 +1399,46 @@ async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Prom
 // The template opened from the server: the name it came with, so a rename
 // counts as a change
 let openedTemplateName = "";
+// The open template has been saved on the server since it opened
+let savedTemplateId = "";
+// The open template is to be saved on the server even unchanged: it was just
+// made and took the user's Default Settings (so it keeps them), or Preview PDF
+// runs it while the server holds no JRXML for it (opened as an empty layout)
+let saveAnywayId = "";
+// The open server template's Jmix report (what Preview PDF runs), and whether
+// its server content couldn't be opened (no JRXML there yet)
+let templateReportId = "";
+let templateReportParameters: TemplatePdfRun["parameters"] = [];
+let openedWithoutJrxml = false;
 
-// Changed since it opened: an undo step past the first, renamed, or already
-// kept (its changes stay kept, an undo back included)
+// Changed since it opened: an undo step past the first, renamed, already kept
+// or saved (its changes stay kept / saved, an undo back included)
 function changedSinceOpen(id: string): boolean {
   return (
     reportStore.historyStack.length > 1 ||
     currentFileName.value !== openedTemplateName ||
-    readActiveTemplate()?.id === id
+    readActiveTemplate()?.id === id ||
+    savedTemplateId === id ||
+    saveAnywayId === id
   );
 }
 
 // Keeps the open template's changes in this browser (only this one template
-// is kept) until the report server can save templates: one of the tenant's own
-// on the server, once changed or renamed. A default template (read only), an
-// unchanged template or one not on the server is not kept
+// is kept) until the report server has them (serverSave forgets them once
+// saved): one of the tenant's own on the server, once changed or renamed. A
+// default template (read only), an unchanged template or one not on the
+// server is not kept. The header's badge follows the server's save
 function saveCurrentFileToStorage(showNotification = false): boolean {
   if (isLoadingFile.value) return false;
   const id = currentFileId.value;
-  if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) {
-    saveStatus.value = "saved";
-    return true;
-  }
+  if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) return true;
   const ok = saveActiveTemplate({
     id,
     name: currentFileName.value,
     jrxml: reportStore.jrxmlContent,
     savedAt: new Date().toISOString(),
   });
-  saveStatus.value = ok ? "saved" : "error";
-  if (showNotification) {
-    if (ok) notification.success(t("notifications.fileSavedSuccess"));
-    else notification.error(t("notifications.fileSaveFailed"));
-  }
+  if (showNotification && !ok) notification.error(t("notifications.fileSaveFailed"));
   return ok;
 }
 
@@ -5801,14 +5888,16 @@ const handleKeyDown = (event: KeyboardEvent) => {
   // Alt+N starts a new template (the browser keeps Ctrl+N for a new window)
   // Not while typing: on a Mac, Option+N types accents (ñ)
   const isTyping = isInputFocused || (activeEl as HTMLElement | null)?.isContentEditable;
-  if (event.altKey && !isCtrlOrMetaPressed && event.code === "KeyN" && !isTyping) {
+  // (developers only, with the File menu)
+  if (SHOW_DEVELOPER_TOOLS && event.altKey && !isCtrlOrMetaPressed && event.code === "KeyN" && !isTyping) {
     event.preventDefault();
     createNewFile();
     return;
   }
 
   // CTRL/CMD+O opens the Open window (My templates / From my computer)
-  if (isCtrlOrMetaPressed && !event.altKey && event.key.toLowerCase() === "o") {
+  // (developers only, with the File menu)
+  if (SHOW_DEVELOPER_TOOLS && isCtrlOrMetaPressed && !event.altKey && event.key.toLowerCase() === "o") {
     event.preventDefault();
     fileManagerRef.value?.showOpenWindow();
     return;
@@ -5817,10 +5906,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
   // A default template can only be looked at: no other shortcut acts on it
   if (readOnlyTemplate.value) return;
 
-  // CTRL/CMD+S saves the current file
+  // CTRL/CMD+S saves the template on the report server now
   if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
-    saveCurrentFileToStorage(true);
+    void saveNow();
     return;
   }
 
@@ -6153,6 +6242,34 @@ function canParseJrxml(text: string): boolean {
   }
 }
 
+// A template just made (Create template, File → New) takes the user's
+// Default Settings as they are now (read again from the server first,
+// refreshFromServer): paper, margins, font, page sections, section heights and
+// their limits. Whatever the server's create put in it is kept; its content
+// is refitted to the page. No undo step (the template has just opened)
+function giveTemplateUserDefaults(): void {
+  const defaults = loadReportDefaults();
+  const page = reportProperties.value;
+  page.pageWidth = defaults.pageWidth;
+  page.pageHeight = defaults.pageHeight;
+  page.orientation = defaults.pageWidth > defaults.pageHeight ? "landscape" : "portrait";
+  page.leftMargin = defaults.leftMargin;
+  page.rightMargin = defaults.rightMargin;
+  page.topMargin = defaults.topMargin;
+  page.bottomMargin = defaults.bottomMargin;
+  page.defaultFont = { ...defaults.font };
+  page.bandLimits = getEffectiveDefaultBandLimits();
+  reportStore.setBandTypes(defaults.bandTypes, { record: false });
+  const config = getEffectiveDefaultBandConfig();
+  for (const band of bands.value) {
+    if (band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND) continue;
+    const height = config[band.type]?.defaultHeight;
+    if (typeof height === "number") band.height = height;
+  }
+  // Detail takes the rest of the page; the content is refitted (JRXML written)
+  handlePageSetupChange();
+}
+
 // The JRXML of an empty template with the user's default settings
 function emptyTemplateJrxml(): string {
   reportStore.loadReport({});
@@ -6200,7 +6317,12 @@ async function openDefaultTemplate(id: string): Promise<void> {
   openingTemplateId = id;
   openingDefaultTemplate.value = true;
   try {
-    const template = await fetchDefaultTemplate(id);
+    // A template just made here takes the user's newest Default Settings
+    const madeHere = newServerTemplateIds.has(id);
+    const [template] = await Promise.all([
+      fetchDefaultTemplate(id),
+      madeHere ? userSettings.refreshFromServer() : Promise.resolve(),
+    ]);
     // The user went elsewhere meanwhile
     if (route.params.id !== id) return;
     // Opened only once the designer's own start is done
@@ -6220,17 +6342,26 @@ async function openDefaultTemplate(id: string): Promise<void> {
     const kept = template.isDefault ? null : readActiveTemplate();
     const keptChanges = kept?.id === id && canParseJrxml(kept.jrxml) ? kept : null;
     openedTemplateName = template.name;
+    savedTemplateId = "";
+    saveAnywayId = "";
+    templateReportId = template.reportId ?? "";
+    templateReportParameters = template.reportParameters ?? [];
+    openedWithoutJrxml = false;
+    serverSave.startTemplate();
     if (keptChanges) {
       applyJrxml(keptChanges.jrxml, keptChanges.name || template.name, "server", id, {
         type: "info",
         text: t("reportCatalog.keptChanges", { name: keptChanges.name || template.name }),
       });
+      // Changes the server didn't get (a failed save, the page closed): sent now
+      void serverSave.flush();
     } else {
       // Content that isn't a JRXML the designer can open (none, an HTML
       // template, a damaged JRXML): an empty layout, with a warning saying why
       const problem = template.problem ?? (canParseJrxml(template.jrxml) ? undefined : TemplateContentProblem.badJrxml);
+      openedWithoutJrxml = !!problem;
       // A template just made here holds the create's own template, not a JRXML
-      const isNew = newServerTemplateIds.has(id) && problem !== TemplateContentProblem.badJrxml;
+      const isNew = madeHere && problem !== TemplateContentProblem.badJrxml;
       const warning = problem && !isNew
         ? { type: "warning" as const, text: t(`reportCatalog.defaultTemplates.contentProblems.${problem}`, { name: template.name }) }
         : undefined;
@@ -6241,12 +6372,21 @@ async function openDefaultTemplate(id: string): Promise<void> {
         id,
         warning,
       );
+      // Its Template Settings = the user's Default Settings now (only once:
+      // opened again, it keeps what it was saved with)
+      if (madeHere && !template.isDefault) {
+        newServerTemplateIds.delete(id);
+        giveTemplateUserDefaults();
+        saveAnywayId = id;
+      }
     }
     const project = lastProject();
     if (project && !reportProjects.value.length) {
       giveTemplateProject(project);
       updateJRXML();
     }
+    // Saved on the server at once, so the template holds those settings
+    if (saveAnywayId === id) void serverSave.flush();
   } catch (error) {
     console.error("Failed to open the default template:", error);
     const unknown = t("reportCatalog.defaultTemplates.errors.unknown");
@@ -6328,13 +6468,15 @@ onMounted(() => {
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
 
-  window.addEventListener("beforeunload", flushAutoSave);
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
   flushAutoSave();
-  window.removeEventListener("beforeunload", flushAutoSave);
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
 
   // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
@@ -6411,26 +6553,26 @@ const openPdfPreview = (): void => {
   });
 };
 
-// The JRXML the preview sends: charts drawn with their numbers, barcodes sized,
-// maps drawn and the template's project read first (a failure is shown in the popup)
-const prepareReportForPreview = async (): Promise<string> => {
+// What Preview PDF (and the AI's check_pdf) runs: the template made ready
+// (charts drawn with their numbers, barcodes sized, maps drawn, the project
+// read), saved on the report server (the run uses the saved template), and
+// its Jmix report. A default template is only run (read only). A failure is
+// shown in the popup
+const prepareReportForPreview = async (): Promise<TemplatePdfRun> => {
   await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   updateJRXML();
-  if (!jrxmlContent.value) {
-    jrxmlContent.value = generateJRXMLContent(
-      reportStore.propertiesForJrxml(),
-      bands.value,
-      reportFields.value,
-      reportParameters.value,
-      subDatasets.value,
-      tableStyles.value,
-      reportVariables.value,
-      [],
-      reportGroups.value,
-      totalPages.value,
-    );
+  const reportId = templateReportId;
+  if (!reportId) throw new Error(t("pdfPreview.errors.notOnServer"));
+  if (!readOnlyTemplate.value) {
+    const id = currentFileId.value;
+    if (!isServerTemplateId(id)) throw new Error(t("pdfPreview.errors.notOnServer"));
+    // The server holds no JRXML for it yet: this one is sent even unchanged
+    if (openedWithoutJrxml) saveAnywayId = id;
+    saveCurrentFileToStorage(false);
+    if (!(await serverSave.flush())) throw new Error(t("pdfPreview.errors.notSaved"));
+    openedWithoutJrxml = false;
   }
-  return jrxmlContent.value;
+  return { reportId, parameters: templateReportParameters, projectId: reportProjects.value[0]?.id };
 };
 
 // Save the edited JRXML content
@@ -8998,19 +9140,39 @@ const moveElementZOrder = (direction: "front" | "back") => {
   box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
+/* Every state in one grid cell: the badge is as wide as the widest (the
+   hidden .save-sizer copies), the shown one sits at its start */
 .auto-save-badge {
-  display: inline-flex;
+  display: inline-grid;
   flex-shrink: 0;
   align-items: center;
+  justify-items: start;
   margin-left: 4px;
   font-size: 11px;
   user-select: none;
+}
+
+.auto-save-badge > * {
+  grid-area: 1 / 1;
+}
+
+.save-sizer {
+  visibility: hidden;
+  pointer-events: none;
+  border: 1px solid transparent;
+}
+
+.save-sizer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .save-status-text {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
   padding: 3px 7px;
   border-radius: 999px;
   font-weight: 600;
@@ -9033,6 +9195,18 @@ const moveElementZOrder = (direction: "front" | "back") => {
 .save-status-text.error {
   color: #dc2626;
   background-color: rgba(220, 38, 38, 0.1);
+}
+.save-retry {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.save-retry:hover {
+  background-color: rgba(220, 38, 38, 0.16);
+}
+.save-retry:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 1px;
 }
 
 .saved-icon {

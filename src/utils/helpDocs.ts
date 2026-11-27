@@ -22,6 +22,7 @@ import { buildCustomTable } from "@/utils/customTable";
 import { buildContentsList, hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { sampleEntries } from "@/utils/pageDesigns";
 import { buildWatermarkElement, isWatermark } from "@/utils/watermark/watermarkElement";
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 
 // Settings cards, by what they set (shared ones are written once)
 export type SettingId =
@@ -422,7 +423,8 @@ export const keyLabel = (key: string) => (key === "Mod" ? (IS_MAC ? "⌘" : "Ctr
 export const TOOLS: { id: ToolId; keys?: string[][]; parts?: string[] }[] = [
   { id: "projects" },
   { id: "reportName" },
-  { id: "file", keys: [["Alt", "N"], ["Mod", "O"], ["Mod", "S"]] },
+  // The File menu and Download JRXML are shown to developers only
+  ...(SHOW_DEVELOPER_TOOLS ? [{ id: "file" as const, keys: [["Alt", "N"], ["Mod", "O"], ["Mod", "S"]] }] : []),
   { id: "undo", keys: [["Mod", "Z"]] },
   { id: "redo", keys: [["Mod", "Y"]] },
   { id: "addPage" },
@@ -433,6 +435,6 @@ export const TOOLS: { id: ToolId; keys?: string[][]; parts?: string[] }[] = [
   { id: "bottomPanel", keys: [["Mod", "B"]] },
   { id: "snap", parts: ["grid", "alignment", "showGrid"] },
   { id: "help" },
-  { id: "download" },
+  ...(SHOW_DEVELOPER_TOOLS ? [{ id: "download" as const }] : []),
   { id: "preview" },
 ];

@@ -643,10 +643,11 @@
     "failedHint": "Sila cuba lagi sebentar lagi.",
     "tryAgain": "Cuba lagi",
     "errors": {
-      "httpFailure": "Penjanaan PDF gagal (HTTP {status})",
-      "invalidJson": "Pelayan mengembalikan JSON yang tidak sah dan bukannya PDF",
-      "noPdf": "Respons pelayan tidak mengandungi PDF",
-      "notPdf": "Respons pelayan bukan PDF (jenis kandungan: {type})"
+      "httpFailure": "Pelayan laporan tidak dapat membuat PDF (HTTP {status})",
+      "notPdf": "Pelayan laporan tidak menghantar PDF (jenis kandungan: {type})",
+      "notOnServer": "Templat ini belum ada pada pelayan laporan, jadi ia tidak boleh dipratonton. Bukanya dari halaman Templat dan cuba lagi.",
+      "notSaved": "Templat tidak dapat disimpan pada pelayan laporan, jadi PDF akan tertinggal perubahan terkini anda. Cuba Pratonton PDF sekali lagi sebentar nanti.",
+      "noProject": "Templat ini memerlukan projek untuk membuat PDF. Pilih satu dalam kotak di sebelah nama templat."
     },
     "tables": {
       "readOnly": "Baca sahaja — edit dalam pereka",
@@ -663,11 +664,6 @@
       "total": "Jumlah",
       "printsNothing": "tidak dicetak sehingga ini dibetulkan."
     }
-  },
-  "previewServerSettings": {
-    "title": "Tetapan Pelayan Pratonton",
-    "serverUrl": "URL Pelayan",
-    "sourceInfo": "Alamat kod sumber pelayan pratonton:"
   },
   "displayRules": {
     "ruleType": "Peraturan Paparan",
@@ -760,7 +756,7 @@
     "close": "Tutup"
   },
   "notifications": {
-    "fileSavedSuccess": "Fail berjaya disimpan",
+    "fileSavedSuccess": "Templat disimpan",
     "fileSaveFailed": "Tidak dapat menyimpan fail\nSila cuba lagi.",
     "jrxmlCopiedSuccess": "Kandungan JRXML disalin ke papan keratan",
     "jrxmlCopyFailed": "Tidak dapat menyalin\nSila pilih teks dan salin sendiri.",
@@ -838,8 +834,6 @@
     "closeNavigation": "Tutup navigasi",
     "accountMenu": "Menu akaun",
     "defaultWorkspace": "Ruang kerja CDP anda",
-    "reports": "Laporan",
-    "searchReports": "Cari laporan",
     "templateSearch": {
       "noMatch": "Tiada templat yang sepadan dengan \"{words}\"",
       "failed": "Templat tidak dapat dicari. Cuba lagi sebentar lagi.",
@@ -889,9 +883,9 @@
     "saving": "Menyimpan...",
     "saveFailed": "Gagal disimpan",
     "saved": "Disimpan",
-    "savingTitle": "Menyimpan perubahan...",
-    "saveFailedTitle": "Simpan automatik gagal",
-    "savedTitle": "Semua perubahan disimpan secara automatik",
+    "savingTitle": "Menyimpan ke pelayan laporan sejurus selepas anda berhenti menyunting...",
+    "saveFailedTitle": "Tidak dapat menyimpan ke pelayan laporan. Perubahan anda disimpan dalam pelayar ini. Klik untuk cuba lagi.",
+    "savedTitle": "Semua perubahan disimpan di pelayan laporan",
     "addNewPage": "Tambah Halaman Baharu",
     "bandHeight": "Ketinggian {bandName}: {height}px",
     "pageButton": "Halaman",
@@ -935,9 +929,9 @@
         "createTitle": "Cipta templat",
         "createText": "Klik Cipta templat: templat baharu dibuka dalam pereka dengan namanya sendiri (Untitled Template, 2, 3…). Klik namanya di bahagian atas untuk menamakannya semula.",
         "navTitle": "Cari jalan anda",
-        "navText": "Templat menunjukkan templat pelayan laporan; Laporan menunjukkan laporan yang dibuat daripadanya, sedia untuk dipratonton.",
+        "navText": "Templat menunjukkan templat pelayan laporan: templat lalai dan templat organisasi anda sendiri.",
         "searchTitle": "Cari templat",
-        "searchText": "Taip sebahagian nama templat: templat yang sepadan dipaparkan dalam senarai di bawah kotak. Klik satu untuk membukanya. Di halaman Laporan, kotak ini menapis laporan.",
+        "searchText": "Taip sebahagian nama templat: templat yang sepadan dipaparkan dalam senarai di bawah kotak. Klik satu untuk membukanya.",
         "accountTitle": "Akaun anda",
         "accountText": "Gambar anda membuka menu akaun: tukar bahasa, buka Tetapan Lalai (kertas, jidar, fon dan bahagian yang digunakan oleh setiap templat baharu) atau log keluar.",
         "helpTitle": "Bantuan sentiasa ada",
@@ -985,8 +979,8 @@
         "pagesText": "Gunakan Halaman di bahagian atas untuk menambah halaman lain, halaman kulit atau isi kandungan.",
         "aiTitle": "Biar AI membantu",
         "aiText": "Buka tab Pembantu AI di sebelah kanan dan tulis apa yang anda perlukan, contohnya “Buat halaman kulit untuk laporan bulan Mac”.",
-        "previewTitle": "Semak dan muat turun",
-        "previewText": "Klik Pratonton PDF untuk melihat dengan tepat rupa laporan. Muat turun menyimpan salinan templat pada komputer anda."
+        "previewTitle": "Semak PDF",
+        "previewText": "Klik Pratonton PDF untuk melihat dengan tepat rupa laporan. Templat disimpan pada pelayan laporan dahulu, jadi PDF menunjukkan perubahan terkini anda."
       },
       "tipsTitle": "Perlu diketahui",
       "tips": {
@@ -996,8 +990,8 @@
         "nudge": "Tahan Shift dan tekan kekunci anak panah untuk mengalihkan item yang dipilih sedikit.",
         "dragScroll": "Untuk mengalihkan item ke halaman lain, seret item itu dan putar roda tetikus, atau tahan dekat tepi atas atau bawah: halaman akan menatal dan item itu ikut bersama.",
         "undo": "Tersilap? Tekan Ctrl+Z (⌘+Z pada Mac) untuk membuat asal.",
-        "saved": "Perubahan pada templat yang dibuka disimpan dalam pelayar ini semasa anda bekerja, sehingga templat boleh disimpan di pelayan laporan.",
-        "open": "Templat dan Laporan ada dalam menu di sebelah kiri. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat dari pelayan laporan atau fail .jrxml dari komputer anda.",
+        "saved": "Templat anda disimpan di pelayan laporan sejurus selepas anda berhenti menyunting, dan serta-merta apabila anda meninggalkannya. Tekan Ctrl+S (⌘+S pada Mac) untuk menyimpan dengan segera.",
+        "open": "Templat anda ada di halaman Templat (menu di sebelah kiri). Kotak carian di bahagian atas mencari templat mengikut nama.",
         "keys": "Lebih banyak kekunci yang menjimatkan klik ada dalam tab Pintasan papan kekunci di atas."
       },
       "tourHint": "Baru di sini? Lawatan seminit menunjukkan di mana letaknya semua perkara.",
@@ -1060,7 +1054,7 @@
       "panelDown": "Turunkan semula panel pembangun yang setinggi penuh",
       "newTemplate": "Mulakan templat baharu",
       "openTemplate": "Buka templat (milik anda atau fail dari komputer anda)",
-      "save": "Simpan sekarang (ia juga disimpan sendiri)",
+      "save": "Simpan ke pelayan laporan sekarang (ia juga disimpan sendiri)",
       "aiSend": "Hantar mesej anda",
       "aiNewLine": "Baris baharu dalam mesej anda",
       "aiClear": "Kosongkan perbualan (semasa tab Pembantu AI dibuka)",
@@ -4068,6 +4062,7 @@
     "scopeHint": "Tetapan ini hanya mengubah templat yang sedang dibuka. Templat baharu bermula daripada Tetapan Lalai."
   },
   "defaultSettings": {
+    "saveFailed": "Tidak dapat menyimpan Tetapan Lalai anda\nIa disimpan dalam pelayar ini dan disimpan semula dengan perubahan anda yang seterusnya.",
     "intro": "Templat baharu bermula dengan tetapan ini. Untuk mengubah satu templat sahaja, bukanya dan gunakan Tetapan Templat (klik bahagian halaman yang kosong).",
     "reset": "Set semula ke lalai aplikasi",
     "resetDone": "Tetapan Lalai kembali kepada tetapan asal.",
@@ -4100,6 +4095,9 @@
     "tryAgain": "Cuba lagi"
   },
   "reportCatalog": {
+    "save": {
+      "failed": "Tidak dapat menyimpan templat\n{reason} Perubahan anda disimpan dalam pelayar ini dan disimpan semula dengan perubahan anda yang seterusnya."
+    },
     "errors": {
       "server": "Pelayan laporan tidak memberi sebab.",
       "status": "HTTP {status} · {reason}"
@@ -4142,44 +4140,6 @@
       "creating": "Mencipta templat…",
       "notFound": "Templat dicipta, tetapi tidak ditemui\n\"{name}\" telah dicipta pada pelayan tetapi tidak dapat dibuka. Bukanya dari Templat."
     },
-    "reports": {
-      "title": "Laporan",
-      "subtitle": "Laporan yang dicipta daripada templat anda. Pratonton membuka templatnya.",
-      "count": "Tiada laporan | 1 laporan | {count} laporan",
-      "resultsFor": "Laporan yang sepadan dengan \"{query}\"",
-      "refresh": "Muatkan senarai semula",
-      "columns": {
-        "name": "Nama",
-        "code": "Kod",
-        "actions": "Tindakan",
-        "project": "Projek"
-      },
-      "preview": "Pratonton",
-      "loadFailed": "Laporan tidak dapat dimuatkan daripada pelayan laporan.",
-      "empty": "Belum ada laporan.",
-      "emptyHint": "Cipta satu daripada templat di halaman Templat.",
-      "goToTemplates": "Pergi ke Templat",
-      "noMatch": "Tiada laporan bernama \"{query}\""
-    },
-    "run": {
-      "title": "Pratonton: {name}",
-      "template": "Templat",
-      "noParameters": "Laporan ini tidak memerlukan apa-apa lagi: tekan Jalankan.",
-      "yes": "Ya",
-      "no": "Tidak",
-      "idPlaceholder": "ID rekod",
-      "listPlaceholder": "ID, dipisahkan dengan koma",
-      "run": "Jalankan",
-      "running": "Sedang dijalankan…",
-      "change": "Ubah dan jalankan semula",
-      "download": "Muat turun",
-      "downloadAgain": "Muat turun semula",
-      "downloaded": "Laporan dimuat turun\n{name}",
-      "downloadedHere": "{name} telah dimuat turun.",
-      "failed": "Laporan tidak dapat dijalankan\n{reason}",
-      "loadFailed": "Laporan ini tidak dapat dibaca daripada pelayan laporan.",
-      "requiredMissing": "Isi {name}\nLaporan memerlukannya untuk dijalankan."
-    },
     "serverDelete": {
       "done": "Templat dipadam\n\"{name}\" telah dibuang dari Templat.",
       "failed": "Templat tidak dapat dipadam\n{reason}"
@@ -4195,7 +4155,7 @@
       "openConfirm": "Buka salinan",
       "openCancel": "Bukan sekarang"
     },
-    "keptChanges": "Perubahan anda dipulihkan\n\"{name}\" dibuka dengan perubahan yang disimpan dalam pelayar ini (templat belum boleh disimpan di pelayan)."
+    "keptChanges": "Perubahan anda dipulihkan\n\"{name}\" dibuka dengan perubahan yang belum diterima oleh pelayan laporan. Ia sedang disimpan sekarang."
   },
   "openTemplate": {
     "title": "Buka templat",
@@ -4207,7 +4167,7 @@
     "none": "Belum ada templat di pelayan laporan.",
     "dropTitle": "Lepaskan fail .jrxml di sini, atau klik untuk memilih",
     "dropHint": "Templat yang dimuat turun dari sini atau dibuat dalam Jaspersoft Studio",
-    "addedNote": "Ia menjadi templat baharu di pelayan laporan, dinamakan mengikut fail. Susun aturnya disimpan dalam pelayar ini sehingga templat boleh disimpan di pelayan.",
+    "addedNote": "Ia menjadi templat baharu di pelayan laporan, dinamakan mengikut fail, dengan susun atur fail ini.",
     "seeAll": "Lihat semua di halaman Templat"
   },
   "pictureChooser": {
@@ -4587,7 +4547,7 @@
     "copied": "Disalin",
     "user": {
       "badge": "Ditetapkan oleh pengguna",
-      "hint": "Tetapan Lalai dan Snap & grid pengguna, disimpan dalam pelayar ini buat masa ini. Diubah hanya dalam Tetapan Lalai."
+      "hint": "Tetapan Lalai dan Snap & grid pengguna, disimpan bersama akaun mereka di pelayan (dan dalam pelayar ini). Diubah hanya dalam Tetapan Lalai."
     },
     "developer": {
       "badge": "Ditetapkan dalam kod",

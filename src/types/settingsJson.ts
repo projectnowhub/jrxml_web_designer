@@ -1,7 +1,9 @@
 // The settings JSONs the bottom panel shows (the user's Default Settings, the
-// developer defaults): one format, only who they belong to differs. Kept in
-// this browser for now; the backend is to give them their own API. A
-// template's own settings are kept in its JRXML (see jrxml/templateSettingsXml.ts).
+// developer defaults): one format, only who they belong to differs. The
+// user's are saved with their account (cdp_UserReportTemplateSetting, the
+// whole UserDefaultSettings as a JSON text in `value`) and kept in this
+// browser. A template's own settings are kept in its JRXML (see
+// jrxml/templateSettingsXml.ts).
 import type { FontSettings } from "@/types";
 
 // The header's Snap & grid switches
@@ -44,4 +46,20 @@ export interface UserDefaultSettings extends SettingsBody {
 // What the app comes with, set only in code (shown, never saved)
 export interface DeveloperDefaultSettings extends SettingsBody {
   name: string;
+}
+
+// GET /v1/user-report-template-settings/current: the signed-in user's row;
+// `value` = their UserDefaultSettings as a JSON text (empty until first saved)
+export interface UserReportTemplateSetting {
+  id?: string;
+  tenantId?: string | null;
+  value?: string | null;
+  version?: number;
+}
+
+// PUT /rest/entities/cdp_UserReportTemplateSetting/{id}: the user's tenant
+// (the server refuses the save without it) and the whole settings JSON as text
+export interface UserReportTemplateSettingUpdate {
+  tenantId: string;
+  value: string;
 }

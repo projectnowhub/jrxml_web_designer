@@ -9,6 +9,8 @@
 // Ctrl, or ⌘ on a Mac: keyLabel in helpDocs.ts); "mouse:<action>" is a mouse
 // action (help.mouse.<action>).
 
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
+
 export type ShortcutGroupId =
   | "history"
   | "select"
@@ -146,8 +148,13 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
   {
     id: "file",
     rows: [
-      { id: "newTemplate", combos: [["Alt", "N"]] },
-      { id: "openTemplate", combos: [["Mod", "O"]] },
+      // New / Open are the File menu's, shown to developers only
+      ...(SHOW_DEVELOPER_TOOLS
+        ? [
+            { id: "newTemplate", combos: [["Alt", "N"]] },
+            { id: "openTemplate", combos: [["Mod", "O"]] },
+          ]
+        : []),
       { id: "save", combos: [["Mod", "S"]] },
     ],
   },

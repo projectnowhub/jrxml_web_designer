@@ -51,11 +51,14 @@ export const reportCatalogKeys = {
   templateSearch: (words: string) => [...reportCatalogKeys.all, "templateSearch", words] as const,
   // Every template code containing these words (finding a free name; always read fresh)
   templateNames: (words: string) => [...reportCatalogKeys.all, "templateNames", words] as const,
-  reports: () => [...reportCatalogKeys.all, "reports"] as const,
-  reportList: () => [...reportCatalogKeys.reports(), "list"] as const,
-  report: (id: string) => [...reportCatalogKeys.reports(), "detail", id] as const,
 };
 
+
+// The signed-in user's Default Settings row on the server
+export const userSettingsKeys = {
+  all: ["userTemplateSettings"] as const,
+  current: () => [...userSettingsKeys.all, "current"] as const,
+};
 
 export const photoKeys = {
   all: ["projectPhotos"] as const,

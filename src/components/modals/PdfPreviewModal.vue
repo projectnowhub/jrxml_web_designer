@@ -162,8 +162,9 @@ import type { Band, ChartElement, DesignElement, FrameElement } from "../../type
 import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow, TableTotals } from "@/types/dataSource";
 import { fetchTableTotals } from "@/queries/dataSourceQueries";
-import { generatePdf, ReportGenerationError } from "../../services/reportService";
-import { previewSubDataSources } from "../../utils/reportRun";
+import { ApiError } from "@/services/apiClient";
+import { runTemplatePdf } from "../../utils/reportRun";
+import type { TemplatePdfRun } from "@/types/reportCatalog";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { collectBoundTables } from "@/utils/table/tableDocument";
@@ -174,8 +175,9 @@ const { t, locale } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
-  // Gets the report ready (charts, barcodes, maps, project) and gives its JRXML
-  prepare: () => Promise<string>;
+  // Gets the template ready (charts, barcodes, maps, project), saves it on the
+  // report server and gives the Jmix report to run
+  prepare: () => Promise<TemplatePdfRun>;
   bands: Band[];
 }>();
 
@@ -296,20 +298,17 @@ async function generatePreview() {
   pdfError.value = "";
 
   try {
-    // The report made ready, then its JRXML
-    const jrxml = await props.prepare();
+    // The template made ready and saved, then its Jmix report run on the server
+    const run = await props.prepare();
     if (controller.signal.aborted) return;
-    // TEMPORARY: each data table's first rows, so the PDF shows real data until the server loads the report bands
-    const subDataSources = await previewSubDataSources(props.bands);
-    if (controller.signal.aborted) return;
-    const pdf = await generatePdf({ jrxml, subDataSources });
+    const pdf = await runTemplatePdf(run);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
     pdfState.value = "ready";
   } catch (error) {
     if ((error as Error).name === "AbortError" || controller.signal.aborted) return;
     // 401 is already handled by apiClient (redirect to login)
-    if (error instanceof ReportGenerationError && error.status === 401) return;
+    if (error instanceof ApiError && error.status === 401) return;
     // Shown in the PDF area, with the server's own words when it sent some
     console.error("Failed to preview PDF:", error);
     pdfError.value = errorText(error);

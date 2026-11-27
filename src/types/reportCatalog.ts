@@ -34,6 +34,8 @@ export interface TenantReportJmixReport {
   name?: string;
   defaultTemplate?: { id?: string; code?: string };
   templates?: TenantReportTemplate[];
+  // Its run parameters (Preview PDF gives the project ones the template's project)
+  inputParameters?: JmixReportParameterInfo[];
 }
 
 // A report server template: rptadn_TenantReport as
@@ -105,11 +107,22 @@ export interface CreateTemplateRequest {
   regions: CreateTemplateRegion[];
 }
 
-// One region (band) of a new template: the entity's attributes it loads, as a
-// table (tabulated) or a single row
+// One region (band) of a template: the entity's attributes it loads, as a
+// table (tabulated) or a single row; collectionPath = the record's list it
+// reads (null: the record itself)
 export interface CreateTemplateRegion {
   tabulated: boolean;
+  collectionPath?: string | null;
   attributes: string[];
+}
+
+// The body of PUT /v2/reports/{id}/edit: the template's name (its code is
+// sent the same), its data regions and its JRXML
+export interface EditTemplateRequest {
+  name: string;
+  code: string;
+  regions: CreateTemplateRegion[];
+  templateContent: string;
 }
 
 // What POST /v2/reports/copy may answer (the copy's row); nothing when it answers no JSON
@@ -139,27 +152,21 @@ export interface DefaultTemplate extends TenantReportTemplateContent {
   name: string;
   // A default template (else one of the tenant's own on the server)
   isDefault: boolean;
+  // Its Jmix report (report.id) and that report's run parameters: what
+  // Preview PDF runs
+  reportId?: string;
+  reportParameters?: JmixReportParameterInfo[];
 }
 
-// The body of POST /v2/report-templates/{definitionId}/create-report-using-report-definition.
-// Proposed by the designer: the backend reads none of it yet (it imports the
-// definition's file as it is)
-export interface CreateReportFromDefinitionRequest {
-  name: string;
-  code: string;
-  reportType: ReportOutputTypeName;
-  projectId: string;
-  projectName: string;
-  projectCode?: string;
+// What Preview PDF runs on the report server: the template's Jmix report (as
+// saved there) with its run parameters, for the template's project
+export interface TemplatePdfRun {
+  reportId: string;
+  parameters: JmixReportParameterInfo[];
+  projectId?: string;
 }
 
 // ---- Jmix Reports REST (/rest/reports, reports-rest 3.0.2 ReportRestControllerManager) ----
-
-export interface JmixReportTemplateInfo {
-  code?: string;
-  outputType?: ReportOutputTypeName;
-  isDefault?: boolean;
-}
 
 // An input parameter; `type` is a ParameterType name (DATE, TEXT, ENTITY,
 // BOOLEAN, NUMERIC, ENTITY_LIST, ENUMERATION, DATETIME, TIME)
@@ -174,20 +181,6 @@ export interface JmixReportParameterInfo {
   defaultValue?: string;
 }
 
-// GET /rest/reports/report (the list: id, name, code, group) and
-// GET /rest/reports/report/{id} (also its templates and parameters)
-export interface JmixReportInfo {
-  id: string;
-  name?: string;
-  code?: string;
-  group?: string;
-  templates?: JmixReportTemplateInfo[];
-  // A report kept in this browser: its template (a designer template's id) and project
-  templateId?: string;
-  projectName?: string;
-  inputParameters?: JmixReportParameterInfo[];
-}
-
 // A run parameter, matched by its alias: `value`, or `values` for a list
 export interface JmixReportRunParameter {
   name: string;
@@ -195,10 +188,11 @@ export interface JmixReportRunParameter {
   values?: string[];
 }
 
-// The body of POST /rest/reports/run/{reportId}
+// The body of POST /rest/reports/run/{reportId}: Preview PDF sends only the
+// parameters (the report's default template, shown inline)
 export interface JmixReportRunRequest {
   template?: string;
-  attachment: boolean;
+  attachment?: boolean;
   parameters: JmixReportRunParameter[];
 }
 

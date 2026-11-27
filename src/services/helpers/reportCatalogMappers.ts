@@ -1,12 +1,27 @@
 // Report catalogue helpers: the list request of the Report Definitions, a
-// definition as the Templates page shows it, a run's file name and a failed
-// call's message. No API calls here.
+// definition as the Templates page shows it, a run's file name, Preview PDF's
+// run request and a failed call's message. No API calls here.
 
 import { ApiError } from "../apiClient";
 import type { ApiErrorBody } from "@/types/api";
 import type { JmixCondition, JmixListParams } from "@/types/jmix";
-import type { ReportDefinition, ReportDefinitionQuery, ReportDefinitionSort, ReportDefinitionSummary } from "@/types/reportCatalog";
-import { REPORT_DEFINITION_PAGE_SIZE, TENANT_REPORT_LIST_FETCH_PLAN } from "@/constants/reportCatalogConstants";
+import type {
+  JmixReportParameterInfo,
+  JmixReportRunRequest,
+  ReportDefinition,
+  ReportDefinitionQuery,
+  ReportDefinitionSort,
+  ReportDefinitionSummary,
+} from "@/types/reportCatalog";
+import {
+  REPORT_DEFINITION_PAGE_SIZE,
+  TENANT_REPORT_LIST_FETCH_PLAN,
+} from "@/constants/reportCatalogConstants";
+import { Entity } from "@/enums/entityName";
+
+// A run parameter that takes a project (cdp_Project)
+const isProjectParameter = (parameter: JmixReportParameterInfo) =>
+  parameter.type === "ENTITY" && parameter.entityMetaClass === Entity.PROJECT;
 
 // A FileRef's own file name: "fs://2026/11/04/x.zip?name=Monthly%20report.zip" → "Monthly report.zip"
 export function reportFileName(fileRef: string | undefined): string {
@@ -88,4 +103,19 @@ export async function reportServerErrorText(error: unknown, fallback: string): P
   } catch {
     return fallback;
   }
+}
+
+// Preview PDF's run of a template's Jmix report (POST /rest/reports/run/{id}):
+// only the parameters, every project parameter (the report's inputParameters,
+// read with the template) given the template's project. Null when the report
+// needs a project and the template has none
+export function toPreviewRunRequest(
+  parameters: JmixReportParameterInfo[],
+  projectId: string | undefined,
+): JmixReportRunRequest | null {
+  const projectParameters = parameters.filter(isProjectParameter);
+  if (!projectId && projectParameters.some((parameter) => parameter.required)) return null;
+  return {
+    parameters: projectId ? projectParameters.map((parameter) => ({ name: parameter.alias, value: projectId })) : [],
+  };
 }

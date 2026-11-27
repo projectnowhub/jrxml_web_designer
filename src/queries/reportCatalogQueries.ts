@@ -1,22 +1,20 @@
-// The Templates page (the report server's Report Definitions) and the Reports
-// page (Jmix reports), through TanStack Query. Creating a report invalidates
-// the reports, so the Reports page fetches again.
+// The report server's templates (the Templates page, opening, saving),
+// through TanStack Query.
 
 import { infiniteQueryOptions, queryOptions, useMutation } from "@tanstack/vue-query";
 import {
-  getReport,
   getReportDefinition,
   getReportDefinitionsFromServer,
-  getReportsFromServer,
   postCopyTemplate,
   postCreateTemplate,
   deleteTenantReport,
+  putEditTemplate,
 } from "@/services/reportCatalogService";
 import { ApiError } from "@/services/apiClient";
 import { readReportTemplatesJrxml } from "@/services/helpers/templateContentHelpers";
 import { toReportDefinitionSummary } from "@/services/helpers/reportCatalogMappers";
 import { clearActiveTemplate, readActiveTemplate } from "@/utils/activeTemplate";
-import type { CreateTemplateRequest, DefaultTemplate, ReportDefinitionQuery } from "@/types/reportCatalog";
+import type { CreateTemplateRequest, DefaultTemplate, EditTemplateRequest, ReportDefinitionQuery } from "@/types/reportCatalog";
 import {
   DEFAULT_TEMPLATE_STALE_TIME,
   TEMPLATE_NAME_PAGE_SIZE,
@@ -66,6 +64,8 @@ export const defaultTemplateQuery = (id: string) =>
         id: definition.id,
         name: summary.name,
         isDefault: summary.isDefault,
+        reportId: definition.report?.id,
+        reportParameters: definition.report?.inputParameters ?? [],
         ...readReportTemplatesJrxml(definition.report),
       };
     },
@@ -77,23 +77,6 @@ export const defaultTemplateQuery = (id: string) =>
 // For the designer, which opens it outside a component's lifetime
 export const fetchDefaultTemplate = (id: string) => queryClient.fetchQuery(defaultTemplateQuery(id));
 
-// Every report the user may run (GET /rest/reports/report; the list comes whole)
-export const reportListQuery = () =>
-  queryOptions({
-    queryKey: reportCatalogKeys.reportList(),
-    queryFn: () => getReportsFromServer(),
-  });
-
-// One report with its templates and run parameters (`enabled` false: not yet)
-export const reportDetailQuery = (id: string, enabled = true) =>
-  queryOptions({
-    queryKey: reportCatalogKeys.report(id),
-    queryFn: () => getReport(id),
-    enabled: enabled && !!id,
-  });
-
-// A report was made: the Reports page fetches again
-export const invalidateReports = () => queryClient.invalidateQueries({ queryKey: reportCatalogKeys.reports() });
 
 // The tenant's own templates were changed (created, duplicated, deleted): only
 // the lists asked with isDefault false fetch again ("Templates"); the default
@@ -125,7 +108,7 @@ export function useCopyTemplate() {
 }
 
 // Delete one of the tenant's own server templates (DELETE
-// /v2/table/rptadn_TenantReport/{id}); only the isDefault false lists fetch again
+// /rest/entities/rptadn_TenantReport/{id}); only the isDefault false lists fetch again
 export function useDeleteServerTemplate() {
   return useMutation({
     mutationFn: (id: string) => deleteTenantReport(id),
@@ -136,6 +119,17 @@ export function useDeleteServerTemplate() {
       return refetchOwnTemplateLists();
     },
   });
+}
+
+// Save one of the tenant's own templates (PUT /v2/reports/{id}/edit), for the
+// designer's autosave (a plain function: a save started as the designer
+// closes must still finish). Opening it again reads the saved one, and the
+// lists (name, last edited) and the top bar's search fetch again when shown
+export async function saveServerTemplate(id: string, request: EditTemplateRequest): Promise<void> {
+  await putEditTemplate(id, request);
+  queryClient.removeQueries({ queryKey: reportCatalogKeys.defaultTemplate(id) });
+  void refetchOwnTemplateLists();
+  void queryClient.invalidateQueries({ queryKey: [...reportCatalogKeys.all, "templateSearch"] });
 }
 
 // Create a template (POST /v2/reports/create); it lands in the tenant's own

@@ -6,10 +6,10 @@
 > them, with the Jmix report the server is to store
 > (`src/utils/jmixReportStructure.ts`, `src/types/jmixReport.ts`), in the
 > dev-only **Report Bands** tab of the bottom panel (Bands / Sent / Stored,
-> Copy). details.json is gone. Until the server stores and runs the bands,
-> Preview PDF still posts the JRXML to `generateForm` with each data table's
-> first 10 rows as `subDataSources` (temporary), and linked details print
-> their parameters' defaults.
+> Copy). details.json is gone. Preview PDF saves the template and runs its
+> Jmix report (`POST /rest/reports/run/{reportId}`, 2026-11-27; the designer
+> no longer calls `generateForm`); linked details print their parameters'
+> defaults until the server fills them from the bands.
 
 Each template is stored on the report server as a **Jmix report** (the
 Jmix Reports add-on, 3.0.1, already a dependency of cdp-report-addon). Its
@@ -66,9 +66,9 @@ POST /rest/reports/run/code/{reportCode} ─→ ReportRunner → each band's Gro
 - **generateForm goes away with it.** Its pipeline (`fixJrxmlContent`,
   `convertBase64Images`, compile, fill, PDF, the fonts) moves into
   `CdpJasperReport`, with each table's rows from its band in place of
-  `applySubDataSources`. The designer's Preview PDF and AI `check_pdf` switch
-  to save + run once PUT, the band loader and `CdpJasperReport` exist; until
-  then they keep `generateForm`.
+  `applySubDataSources`. The designer's Preview PDF and AI `check_pdf`
+  already save + run (2026-11-27, `utils/reportRun.ts`); the designer no
+  longer calls `generateForm`.
 - **Why Groovy data sets, not JPQL.** JPQL data sets run on the raw
   `EntityManager`: no row-level security (the Jmix docs say so), no
   user-defined fields (dynamic attributes), no `_instanceName`, no row limit.

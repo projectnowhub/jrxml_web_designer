@@ -1,15 +1,15 @@
 // Report catalogue constants: the Templates page (the report server's Report
 // Definitions) and the Reports page (Jmix reports).
 
-import type { CreateTemplateRequest } from "@/types/reportCatalog";
+import type { CreateTemplateRegion, CreateTemplateRequest } from "@/types/reportCatalog";
 
-// Templates a page (Grid: added while scrolling; List: pages of these sizes)
+// The Templates page's lists in List view: rows a page (the request's limit)
+// and the Per page choices above the list
 export const REPORT_DEFINITION_PAGE_SIZE = 25;
 export const REPORT_DEFINITION_PAGE_SIZES = [25, 50, 100] as const;
 
-// Default templates (the report server's Report Definitions) on the Templates
-// page: Grid shows this many at first ("Show more" adds as many again), List
-// pages of this many
+// The Templates page's lists in Grid view: this many cards at first ("Show
+// more" adds as many again; 12 fills rows of 2, 3, 4 or 6 cards)
 export const DEFAULT_TEMPLATE_PAGE_SIZE = 12;
 // A default template (list and file) is read again after a minute at most:
 // it can't change from here, but an admin may replace it on the server
@@ -34,10 +34,6 @@ export const TEMPLATE_SEARCH_DELAY_MS = 500;
 export const TEMPLATE_SEARCH_MIN_LETTERS = 2;
 export const TEMPLATE_SEARCH_STALE_TIME = 30_000;
 
-// Reports a page on the Reports page (the list comes whole: paged in the browser)
-export const REPORTS_PAGE_SIZE = 25;
-export const REPORTS_PAGE_SIZES = [25, 50, 100] as const;
-
 // What every new template is created with, for now (the Create popup asks only
 // for the name and code): a report on one project, an HTML template, PDF output
 export const CREATE_TEMPLATE_FIXED: Omit<CreateTemplateRequest, "name" | "code"> = {
@@ -49,5 +45,13 @@ export const CREATE_TEMPLATE_FIXED: Omit<CreateTemplateRequest, "name" | "code">
   regions: [{ tabulated: false, attributes: ["projectTitle"] }],
 };
 
-// The Jmix template code run when a report has no default one
-export const DEFAULT_REPORT_TEMPLATE_CODE = "DEFAULT";
+// The regions a saved template is sent with (PUT /v2/reports/{id}/edit): the
+// create's own, for now (the template's real data comes with the report bands,
+// docs/REPORT_ENGINE.md)
+export const EDIT_TEMPLATE_REGIONS: CreateTemplateRegion[] = [
+  { tabulated: false, collectionPath: null, attributes: ["projectTitle"] },
+];
+
+// A template is saved this long after the last change (a burst of changes is
+// one request); leaving the template saves at once
+export const TEMPLATE_SAVE_DELAY_MS = 3000;

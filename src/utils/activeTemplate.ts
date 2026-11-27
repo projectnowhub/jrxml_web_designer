@@ -1,5 +1,6 @@
 // The open template's changes, kept in this browser until the report server
-// can save templates (no update API yet). Only one template is ever kept: the
+// has them (composables/useServerTemplateSave.ts forgets them once saved), so
+// a failed save or a closed page loses nothing. Only one template is ever kept: the
 // one being worked on, as its JRXML (the template saved as JRXML round-trips
 // every setting). Opening that template again (a refresh, the Templates list)
 // gives these changes back instead of the server's content.

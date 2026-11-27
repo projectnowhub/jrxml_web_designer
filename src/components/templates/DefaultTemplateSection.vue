@@ -13,6 +13,13 @@
         </h2>
         <p class="hint">{{ t(`${textsKey}.hint`) }}</p>
       </div>
+      <PageSizeChoice
+        v-if="view === 'list' && !isError"
+        class="page-size"
+        :model-value="listSize"
+        :sizes="REPORT_DEFINITION_PAGE_SIZES"
+        @update:model-value="chooseListSize"
+      />
     </div>
 
     <div v-if="isError" class="load-failed" role="alert">
@@ -49,10 +56,10 @@
         @sort="sortList"
       />
       <PageNavigation
-        v-if="total > DEFAULT_TEMPLATE_PAGE_SIZE"
+        v-if="total > listSize"
         class="pagination"
         :page="listPage"
-        :page-size="DEFAULT_TEMPLATE_PAGE_SIZE"
+        :page-size="listSize"
         :total="total"
         @update:page="listPage = $event"
       />
@@ -64,16 +71,22 @@
 <script setup lang="ts">
 // The report server's templates on the Templates page (rptadn_TenantReport):
 // the default ones (isDefault, the first section) or the tenant's own
-// (isDefault false, "Templates"); only isDefault is sent as a filter. Grid: A to Z, a page at a time ("Show more"). List: pages,
-// the Name / Last edited / Created headings sort (the server sorts). Hidden
-// when there are none (and no failure to show).
+// (isDefault false, "Templates"); only isDefault is sent as a filter. Grid: A to Z, a page at a time ("Show more"). List: pages
+// of 25 / 50 / 100 (Per page, remembered per browser for each section; the
+// request asks for exactly that many), the Name / Last edited / Created
+// headings sort (the server sorts). Hidden when there are none (and no
+// failure to show).
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/vue-query";
 import { ChevronDown } from "@lucide/vue";
 import { defaultTemplateGridQuery, defaultTemplatePageQuery } from "@/queries/reportCatalogQueries";
-import { DEFAULT_TEMPLATE_PAGE_SIZE } from "@/constants/reportCatalogConstants";
+import {
+  DEFAULT_TEMPLATE_PAGE_SIZE,
+  REPORT_DEFINITION_PAGE_SIZE,
+  REPORT_DEFINITION_PAGE_SIZES,
+} from "@/constants/reportCatalogConstants";
 import { chosenTemplateView } from "@/composables/useTemplates";
 import { useReportServerError } from "@/composables/useReportServerError";
 import type { ReportDefinitionSort, ReportDefinitionSummary } from "@/types/reportCatalog";
@@ -81,6 +94,10 @@ import type { TemplateCard, TemplateSort, TemplateSortDirection } from "@/types/
 import TemplateGrid from "./TemplateGrid.vue";
 import TemplateList from "./TemplateList.vue";
 import PageNavigation from "@/components/common/PageNavigation.vue";
+import PageSizeChoice from "@/components/common/PageSizeChoice.vue";
+
+// The list's rows a page, remembered per browser (one key per section)
+const PAGE_SIZE_KEY_PREFIX = "templates.pageSize.";
 
 // The list's columns as the server's sort fields
 const SERVER_SORT: Record<TemplateSort, ReportDefinitionSort> = {
@@ -128,6 +145,30 @@ const gridSkeletons = computed(() =>
 const listSort = ref<TemplateSort>("name");
 const listDir = ref<TemplateSortDirection>("asc");
 const listPage = ref(1);
+const pageSizeKey = PAGE_SIZE_KEY_PREFIX + (props.isDefault ? "default" : "server");
+const listSize = ref<number>(storedListSize());
+
+function storedListSize(): number {
+  try {
+    const size = Number(localStorage.getItem(pageSizeKey));
+    return (REPORT_DEFINITION_PAGE_SIZES as readonly number[]).includes(size) ? size : REPORT_DEFINITION_PAGE_SIZE;
+  } catch {
+    return REPORT_DEFINITION_PAGE_SIZE;
+  }
+}
+
+// Another Per page: back to page 1
+function chooseListSize(size: number) {
+  if (size === listSize.value) return;
+  listSize.value = size;
+  listPage.value = 1;
+  try {
+    localStorage.setItem(pageSizeKey, String(size));
+  } catch {
+    // Remembering is only a convenience
+  }
+}
+
 const list = useQuery(
   computed(() => ({
     ...defaultTemplatePageQuery({
@@ -135,7 +176,7 @@ const list = useQuery(
       sort: SERVER_SORT[listSort.value],
       dir: listDir.value,
       page: listPage.value,
-      size: DEFAULT_TEMPLATE_PAGE_SIZE,
+      size: listSize.value,
     }),
     enabled: view.value === "list",
     placeholderData: keepPreviousData,
@@ -195,6 +236,10 @@ h2 {
   margin: 4px 0 14px;
   color: #6e6a80;
   font-size: 12px;
+}
+.page-size {
+  flex: none;
+  margin-bottom: 14px;
 }
 .pagination {
   margin-top: 12px;

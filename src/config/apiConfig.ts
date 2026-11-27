@@ -9,7 +9,6 @@ export const API_ROUTES = {
   currentUser: "/v1/user/me",
   logout: "/logout",
   files: "/rest/files",
-  reportServer: "/v2",
   analytics: "/v2/analytics/aggregate",
   table: "/v2/table",
   projectList: "/v2/table/cdp_Project",
@@ -28,15 +27,16 @@ export const API_ROUTES = {
   copyTemplate: "/v2/reports/copy",
   // Create a template (the tenant's own, isDefault false)
   createTemplate: "/v2/reports/create",
-  reportTemplates: "/v2/report-templates",
-  reports: "/rest/reports/report",
+  // Save a template: PUT …/{id}/edit, {id} = the rptadn_TenantReport row's id
+  editTemplate: "/v2/reports",
+  // The signed-in user's Default Settings (GET), saved with PUT …/{id} on
+  // Jmix's entity API (userTemplateSettingEntity)
+  currentUserTemplateSettings: "/v1/user-report-template-settings/current",
+  userTemplateSettingEntity: "/rest/entities/cdp_UserReportTemplateSetting",
   runReport: "/rest/reports/run",
 } as const;
 
 export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;
-
-// Report server (Preview PDF)
-export const PDF_PREVIEW_API = apiUrl(API_ROUTES.reportServer);
 
 // Image upload endpoint
 export const IMAGE_UPLOAD_API = apiUrl(API_ROUTES.files);

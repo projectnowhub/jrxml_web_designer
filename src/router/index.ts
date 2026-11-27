@@ -4,7 +4,6 @@ import {
   LoginView,
   CallbackView,
   DesktopLoginView,
-  ReportsView,
   ActivityView,
   DefaultSettingsView,
 } from "../views";
@@ -24,11 +23,6 @@ const router = createRouter({
           path: "",
           name: "home",
           component: HomeView,
-        },
-        {
-          path: "reports",
-          name: "reports",
-          component: ReportsView,
         },
         {
           path: "activity",

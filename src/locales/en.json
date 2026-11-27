@@ -643,10 +643,11 @@
     "failedHint": "Please try again in a moment.",
     "tryAgain": "Try again",
     "errors": {
-      "httpFailure": "PDF generation failed (HTTP {status})",
-      "invalidJson": "The server returned invalid JSON instead of a PDF",
-      "noPdf": "The server response did not contain a PDF",
-      "notPdf": "The server response is not a PDF (content type: {type})"
+      "httpFailure": "The report server couldn't make the PDF (HTTP {status})",
+      "notPdf": "The report server didn't send a PDF (content type: {type})",
+      "notOnServer": "This template isn't on the report server yet, so it can't be previewed. Open it from the Templates page and try again.",
+      "notSaved": "The template couldn't be saved on the report server, so the PDF would miss your latest changes. Try Preview PDF again in a moment.",
+      "noProject": "This template needs a project to make the PDF. Choose one in the box next to the template's name."
     },
     "tables": {
       "readOnly": "Read-only — edit in the designer",
@@ -663,11 +664,6 @@
       "total": "Total",
       "printsNothing": "prints nothing until this is fixed."
     }
-  },
-  "previewServerSettings": {
-    "title": "Preview Server Settings",
-    "serverUrl": "Server URL",
-    "sourceInfo": "Preview server source code address:"
   },
   "displayRules": {
     "ruleType": "Display Rule",
@@ -760,7 +756,7 @@
     "close": "Close"
   },
   "notifications": {
-    "fileSavedSuccess": "File saved successfully",
+    "fileSavedSuccess": "Template saved",
     "fileSaveFailed": "Couldn't save the file\nPlease try again.",
     "jrxmlCopiedSuccess": "JRXML content copied to clipboard",
     "jrxmlCopyFailed": "Couldn't copy\nPlease select the text and copy it yourself.",
@@ -838,8 +834,6 @@
     "closeNavigation": "Close navigation",
     "accountMenu": "Account menu",
     "defaultWorkspace": "Your CDP workspace",
-    "reports": "Reports",
-    "searchReports": "Search reports",
     "templateSearch": {
       "noMatch": "No template matches \"{words}\"",
       "failed": "Couldn't search the templates. Try again in a moment.",
@@ -889,9 +883,9 @@
     "saving": "Saving...",
     "saveFailed": "Save failed",
     "saved": "Saved",
-    "savingTitle": "Saving changes...",
-    "saveFailedTitle": "Auto-save failed",
-    "savedTitle": "All changes are saved automatically",
+    "savingTitle": "Saving to the report server a moment after you stop editing...",
+    "saveFailedTitle": "Couldn't save to the report server. Your changes are kept in this browser. Click to try again.",
+    "savedTitle": "All changes are saved on the report server",
     "addNewPage": "Add New Page",
     "bandHeight": "{bandName} Height: {height}px",
     "pageButton": "Page",
@@ -935,9 +929,9 @@
         "createTitle": "Create a template",
         "createText": "Click Create template: a new template opens in the designer with a name of its own (Untitled Template, 2, 3…). Click its name at the top to rename it.",
         "navTitle": "Find your way",
-        "navText": "Templates shows the report server's templates; Reports the reports made from them, ready to preview.",
+        "navText": "Templates shows the report server's templates: the default ones and your organisation's own.",
         "searchTitle": "Find a template",
-        "searchText": "Type part of a template's name: the matching templates show in a list under the box. Click one to open it. On the Reports page, the box filters the reports.",
+        "searchText": "Type part of a template's name: the matching templates show in a list under the box. Click one to open it.",
         "accountTitle": "Your account",
         "accountText": "Your picture opens your account menu: change the language, open Default Settings (the paper, margins, font and sections every new template starts with) or sign out.",
         "helpTitle": "Help is always here",
@@ -985,8 +979,8 @@
         "pagesText": "Use Page at the top to add another page, a cover page or a table of contents.",
         "aiTitle": "Let the AI help",
         "aiText": "Open the AI Assistant tab on the right and write what you need, for example “Make a cover page for the March report”.",
-        "previewTitle": "Check and download",
-        "previewText": "Click Preview PDF to see exactly what the report will look like. Download saves a copy of the template on your computer."
+        "previewTitle": "Check the PDF",
+        "previewText": "Click Preview PDF to see exactly what the report will look like. The template is saved on the report server first, so the PDF shows your latest changes."
       },
       "tipsTitle": "Good to know",
       "tips": {
@@ -996,8 +990,8 @@
         "nudge": "Hold Shift and press the arrow keys to move a selected item a little.",
         "dragScroll": "To move an item to another page, drag it and roll the mouse wheel, or hold it near the top or bottom edge: the pages scroll and the item comes with you.",
         "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
-        "saved": "Your changes to the open template are kept in this browser as you go, until templates can be saved on the report server.",
-        "open": "Templates and Reports are in the menu on the left. In the designer, File → Open (Ctrl+O) opens a template from the report server or a .jrxml file from your computer.",
+        "saved": "Your template is saved on the report server a moment after you stop editing, and at once when you leave it. Press Ctrl+S (⌘+S on a Mac) to save straight away.",
+        "open": "Your templates are on the Templates page (the menu on the left). The search box at the top finds one by name.",
         "keys": "More keys that save you clicks are in the Keyboard shortcuts tab above."
       },
       "tourHint": "New here? A one-minute tour shows you where everything is.",
@@ -1060,7 +1054,7 @@
       "panelDown": "Bring the full-height developer panel back down",
       "newTemplate": "Start a new template",
       "openTemplate": "Open a template (yours or a file from your computer)",
-      "save": "Save now (it also saves by itself)",
+      "save": "Save to the report server now (it also saves by itself)",
       "aiSend": "Send your message",
       "aiNewLine": "New line in your message",
       "aiClear": "Clear the conversation (while the AI Assistant tab is open)",
@@ -4068,6 +4062,7 @@
     "scopeHint": "These settings change only the template you have open. New templates start from Default Settings."
   },
   "defaultSettings": {
+    "saveFailed": "Couldn't save your Default Settings\nThey are kept in this browser and saved again with your next change.",
     "intro": "New templates start with these settings. To change one template only, open it and use Template Settings (click an empty part of the page).",
     "reset": "Reset to the app's defaults",
     "resetDone": "Default Settings are back to the original settings.",
@@ -4100,6 +4095,9 @@
     "tryAgain": "Try again"
   },
   "reportCatalog": {
+    "save": {
+      "failed": "Couldn't save the template\n{reason} Your changes are kept in this browser and saved again with your next change."
+    },
     "errors": {
       "server": "The report server didn't say why.",
       "status": "HTTP {status} · {reason}"
@@ -4142,44 +4140,6 @@
       "creating": "Creating the template…",
       "notFound": "Template created, but not found\n\"{name}\" was made on the server but couldn't be opened. Open it from Templates."
     },
-    "reports": {
-      "title": "Reports",
-      "subtitle": "Reports created from your templates. Preview opens its template.",
-      "count": "No reports | 1 report | {count} reports",
-      "resultsFor": "Reports matching \"{query}\"",
-      "refresh": "Load the list again",
-      "columns": {
-        "name": "Name",
-        "code": "Code",
-        "actions": "Actions",
-        "project": "Project"
-      },
-      "preview": "Preview",
-      "loadFailed": "The reports couldn't be loaded from the report server.",
-      "empty": "No reports yet.",
-      "emptyHint": "Create one from a template on the Templates page.",
-      "goToTemplates": "Go to Templates",
-      "noMatch": "No report is called \"{query}\""
-    },
-    "run": {
-      "title": "Preview: {name}",
-      "template": "Template",
-      "noParameters": "This report needs nothing more: press Run.",
-      "yes": "Yes",
-      "no": "No",
-      "idPlaceholder": "The record's id",
-      "listPlaceholder": "Ids, separated by commas",
-      "run": "Run",
-      "running": "Running…",
-      "change": "Change and run again",
-      "download": "Download",
-      "downloadAgain": "Download again",
-      "downloaded": "Report downloaded\n{name}",
-      "downloadedHere": "{name} was downloaded.",
-      "failed": "Couldn't run the report\n{reason}",
-      "loadFailed": "This report couldn't be read from the report server.",
-      "requiredMissing": "Fill in {name}\nThe report needs it to run."
-    },
     "serverDelete": {
       "done": "Template deleted\n\"{name}\" was removed from Templates.",
       "failed": "Couldn't delete the template\n{reason}"
@@ -4195,7 +4155,7 @@
       "openConfirm": "Open copy",
       "openCancel": "Not now"
     },
-    "keptChanges": "Your changes are back\n\"{name}\" opened with the changes kept in this browser (templates can't be saved on the server yet)."
+    "keptChanges": "Your changes are back\n\"{name}\" opened with changes the report server didn't get yet. They are being saved now."
   },
   "openTemplate": {
     "title": "Open a template",
@@ -4207,7 +4167,7 @@
     "none": "There are no templates on the report server yet.",
     "dropTitle": "Drop a .jrxml file here, or click to choose one",
     "dropHint": "A template downloaded from here or made in Jaspersoft Studio",
-    "addedNote": "It becomes a new template on the report server, named after the file. Its layout is kept in this browser until templates can be saved on the server.",
+    "addedNote": "It becomes a new template on the report server, named after the file, with this file's layout.",
     "seeAll": "See all on the Templates page"
   },
   "pictureChooser": {
@@ -4587,7 +4547,7 @@
     "copied": "Copied",
     "user": {
       "badge": "Set by the user",
-      "hint": "The user's Default Settings and Snap & grid, kept in this browser for now. Changed only in Default Settings."
+      "hint": "The user's Default Settings and Snap & grid, saved with their account on the server (and kept in this browser). Changed only in Default Settings."
     },
     "developer": {
       "badge": "Set in code",
